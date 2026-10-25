@@ -1,0 +1,144 @@
+/* ---------- Letra más grande y legible ---------- */
+html {
+  font-size: 112.5%; /* 18px base: todo lo que usa rem crece */
+}
+
+:root {
+  --text-2xs: 0.8125rem;
+  --text-xs: 0.875rem;
+  --text-sm: 0.9375rem;
+  --text-md: 1rem;
+}
+
+/*
+ * Versión simple: una sola columna angosta, más aire entre bloques
+ * y nada compitiendo por la atención. Usa los mismos colores y tipografías.
+ */
+
+.nx-home {
+  max-width: 760px;
+  padding-top: var(--space-12);
+}
+
+.nx-home__head {
+  margin-bottom: var(--space-12);
+}
+
+.nx-home__section + .nx-home__section {
+  margin-top: var(--space-16);
+}
+
+.nx-home .nx-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.nx-home .nx-empty {
+  padding: var(--space-10) var(--space-6);
+  border: 1px dashed var(--rule);
+  border-radius: var(--radius-lg);
+}
+
+.nx-home .nx-rag {
+  margin: 0;
+  box-shadow: none;
+}
+
+/* El editor respira igual que el inicio. */
+.nx-doc-head__sub {
+  margin-top: var(--space-2);
+  color: var(--muted);
+}
+
+.nx-doc-head {
+  padding-top: var(--space-6);
+}
+
+/* Estado de la subida, sin gritar. */
+.nx-rag__status {
+  margin: var(--space-3) 0 0;
+  color: var(--muted);
+  min-height: 1.4em;
+}
+
+.nx-rag__status[data-state="error"] {
+  color: var(--danger, #9a2a22);
+}
+
+.nx-rag__list {
+  margin-top: var(--space-4);
+}
+
+.nx-home .nx-rag__head {
+  margin-bottom: var(--space-4);
+}
+
+.nx-home .nx-empty {
+  padding: var(--space-8) var(--space-6);
+}
+
+/* ---------- Pasos del inicio ---------- */
+.nx-home__step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-display, inherit);
+  font-size: var(--text-2xl);
+  color: var(--ink);
+}
+
+.nx-home__step span {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--wine, #7a1f2b);
+  color: #fff;
+  font-size: var(--text-base);
+  font-family: var(--font-sans, inherit);
+  font-weight: 600;
+}
+
+.nx-home__step small {
+  color: var(--muted);
+  font-size: var(--text-base);
+}
+
+.nx-home__ask {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  padding: var(--space-6);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--paper-0);
+}
+
+.nx-home__ask-text {
+  flex: 1 1 280px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.nx-rag__remove {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+}
+
+.nx-rag__remove:hover {
+  color: var(--danger, #9a2a22);
+}
+
+.nx-home .nx-section__title {
+  font-size: var(--text-xl);
+}

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Abre NEXO en http://127.0.0.1:8090 (con límite de subida de 25 MB y varios procesos).
+cd "$(dirname "$0")" || exit 1
+PHP_CLI_SERVER_WORKERS=4 exec php \
+  -d upload_max_filesize=25M -d post_max_size=30M -d max_execution_time=300 -d memory_limit=512M \
+  -S 127.0.0.1:8090 -t public vendor/codeigniter4/framework/system/rewrite.php

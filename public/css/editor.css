@@ -1,0 +1,922 @@
+/* ==========================================================================
+   NEXO UNAC · Editor de bloques
+   ========================================================================== */
+
+.nx-editor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nx-block {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 26px;
+  gap: var(--space-1);
+  margin: 0 -6px;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.nx-block:hover,
+.nx-block:focus-within {
+  background: oklch(93.4% 0.018 82 / 0.55);
+}
+
+.nx-block.is-dragging {
+  z-index: 2;
+  background: var(--paper-0);
+  box-shadow: var(--shadow-2);
+  opacity: 0.92;
+}
+
+.nx-block__gutter {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding-top: 2px;
+  opacity: 0.24;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.nx-block:hover .nx-block__gutter,
+.nx-block:focus-within .nx-block__gutter {
+  opacity: 1;
+}
+
+.nx-block__gutter button {
+  display: inline-grid;
+  width: 15px;
+  height: 25px;
+  place-items: center;
+  border-radius: var(--radius-xs);
+  color: var(--muted);
+  cursor: grab;
+}
+
+.nx-block__gutter button:hover {
+  background: var(--paper-3);
+  color: var(--wine);
+}
+
+.nx-block__gutter button:active {
+  cursor: grabbing;
+}
+
+.nx-block__gutter .nx-icon {
+  width: 13px;
+  height: 13px;
+  pointer-events: none;
+}
+
+.nx-block__main {
+  min-width: 0;
+}
+
+.nx-block__body {
+  min-width: 0;
+}
+
+.nx-block__actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-top: 1px;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.nx-block:hover .nx-block__actions,
+.nx-block:focus-within .nx-block__actions {
+  opacity: 1;
+}
+
+.nx-block__actions .nx-icon-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-xs);
+}
+
+.nx-block__actions .nx-icon-btn .nx-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.nx-block__menu {
+  top: 26px;
+  right: 0;
+  min-width: 224px;
+}
+
+.nx-block__menu .nx-menu__item {
+  min-height: 31px;
+}
+
+.nx-block__menu .nx-menu__item small {
+  display: block;
+  color: var(--muted-2);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.nx-block__menu .nx-menu__item .nx-menu__shortcut {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.nx-block__type-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted-2);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* Texto ------------------------------------------------------------------- */
+
+.nx-block__editor {
+  min-height: 30px;
+  padding: 1px 2px;
+  border-radius: var(--radius-xs);
+  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.nx-block__editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted-2);
+  pointer-events: none;
+}
+
+.nx-block__editor:focus {
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+
+.nx-block__editor--h2 {
+  margin-top: var(--space-4);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 500;
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.nx-block__editor--h3 {
+  margin-top: var(--space-3);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 500;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+}
+
+.nx-block__editor--lead {
+  color: var(--ink-2);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: 1.55;
+}
+
+.nx-block__editor strong {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.nx-block__editor a {
+  color: var(--wine);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.nx-block__editor code {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--paper-3);
+  color: var(--wine-ink);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+.nx-block__editor ul,
+.nx-block__editor ol {
+  padding-left: 24px;
+  list-style: disc;
+}
+
+.nx-block__editor ol {
+  list-style: decimal;
+}
+
+.nx-block__editor li + li {
+  margin-top: 3px;
+}
+
+/* Checklist --------------------------------------------------------------- */
+
+.nx-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nx-checklist__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: 2px 2px 2px 0;
+  border-radius: var(--radius-xs);
+}
+
+.nx-checklist__item:hover {
+  background: oklch(96.2% 0.014 84 / 0.7);
+}
+
+.nx-checklist__box {
+  display: grid;
+  width: 17px;
+  height: 17px;
+  flex: none;
+  margin-top: 3px;
+  place-items: center;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--paper-0);
+  color: transparent;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.nx-checklist__box:hover {
+  border-color: var(--wine);
+  color: var(--wine);
+}
+
+.nx-checklist__item.is-checked .nx-checklist__box {
+  border-color: var(--wine);
+  background: var(--wine);
+  color: var(--paper-0);
+}
+
+.nx-checklist__box .nx-icon {
+  width: 11px;
+  height: 11px;
+}
+
+.nx-checklist__text {
+  min-width: 0;
+  flex: 1;
+  min-height: 24px;
+  padding: 1px 2px;
+  border-radius: var(--radius-xs);
+  color: var(--ink-2);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+
+.nx-checklist__text:empty::before {
+  content: "Elemento de la lista";
+  color: var(--muted-2);
+}
+
+.nx-checklist__item.is-checked .nx-checklist__text {
+  color: var(--muted-2);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.nx-checklist__remove {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  margin-top: 2px;
+  place-items: center;
+  border-radius: var(--radius-xs);
+  color: var(--muted-2);
+  opacity: 0;
+}
+
+.nx-checklist__item:hover .nx-checklist__remove,
+.nx-checklist__item:focus-within .nx-checklist__remove {
+  opacity: 1;
+}
+
+.nx-checklist__remove:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.nx-checklist__remove .nx-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.nx-checklist__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 3px 2px;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.nx-checklist__add:hover {
+  color: var(--wine);
+}
+
+.nx-checklist__add .nx-icon {
+  width: 13px;
+  height: 13px;
+}
+
+/* Código ------------------------------------------------------------------ */
+
+.nx-codeblock {
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  background: var(--ink);
+}
+
+.nx-codeblock__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 5px var(--space-2) 5px var(--space-3);
+  border-bottom: 1px solid oklch(97.8% 0.008 88 / 0.1);
+  background: oklch(97.8% 0.008 88 / 0.035);
+}
+
+.nx-codeblock__lang {
+  min-height: 24px;
+  padding: 1px 20px 1px 5px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background-color: transparent;
+  background-position:
+    calc(100% - 11px) calc(50% + 1px),
+    calc(100% - 7px) calc(50% + 1px);
+  background-size:
+    4px 4px,
+    4px 4px;
+  color: oklch(80% 0.018 84);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-transform: lowercase;
+}
+
+.nx-codeblock__lang option {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.nx-codeblock__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border-radius: var(--radius-xs);
+  color: oklch(76% 0.018 84);
+  font-size: 14px;
+}
+
+.nx-codeblock__copy:hover {
+  background: oklch(97.8% 0.008 88 / 0.1);
+  color: var(--paper);
+}
+
+.nx-codeblock__copy .nx-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.nx-codeblock__area {
+  display: block;
+  width: 100%;
+  min-height: 86px;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: oklch(92% 0.014 84);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  resize: vertical;
+  tab-size: 2;
+}
+
+.nx-codeblock__area:focus {
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+
+.nx-codeblock pre {
+  border: 0;
+  border-radius: 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-xs);
+}
+
+/* Tabla ------------------------------------------------------------------- */
+
+.nx-tableblock {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  background: var(--paper-0);
+}
+
+.nx-tableblock table {
+  min-width: 420px;
+  font-size: var(--text-sm);
+}
+
+.nx-tableblock th,
+.nx-tableblock td {
+  min-width: 100px;
+  padding: 0;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.nx-tableblock th:last-child,
+.nx-tableblock td:last-child {
+  border-right: 0;
+}
+
+.nx-tableblock tr:last-child td {
+  border-bottom: 0;
+}
+
+.nx-tableblock th {
+  background: var(--paper-2);
+}
+
+.nx-tableblock th .nx-tableblock__cell {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+
+.nx-tableblock__cell {
+  min-height: 32px;
+  padding: 7px 10px;
+  border-radius: 0;
+  outline: none;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+
+.nx-tableblock__cell:empty::before {
+  content: " ";
+}
+
+.nx-tableblock__cell:focus {
+  background: var(--wine-soft);
+  box-shadow: inset 0 0 0 1px var(--wine);
+}
+
+.nx-tableblock__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-top: 1px solid var(--rule);
+  background: var(--paper-2);
+}
+
+.nx-tableblock__tools button {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.nx-tableblock__tools button:hover {
+  color: var(--wine);
+}
+
+/* Cita -------------------------------------------------------------------- */
+
+.nx-quoteblock {
+  padding: var(--space-2) 0 var(--space-2) var(--space-5);
+  border-left: 3px solid var(--gold);
+}
+
+.nx-quoteblock__text {
+  min-height: 32px;
+  color: var(--ink-2);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: 1.5;
+  outline: none;
+}
+
+.nx-quoteblock__text:empty::before {
+  content: "Una idea que merece quedarse";
+  color: var(--muted-2);
+}
+
+.nx-quoteblock__cite {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.nx-quoteblock__cite::placeholder {
+  color: var(--muted-2);
+}
+
+/* Callout ----------------------------------------------------------------- */
+
+.nx-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius-sm);
+  background: var(--gold-soft);
+}
+
+.nx-callout--info {
+  border-left-color: var(--wine);
+  background: var(--wine-soft);
+}
+
+.nx-callout--success {
+  border-left-color: var(--success);
+  background: var(--success-soft);
+}
+
+.nx-callout--warning {
+  border-left-color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.nx-callout--danger {
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.nx-callout__icon {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: oklch(97.8% 0.008 88 / 0.5);
+  color: var(--gold-ink);
+}
+
+.nx-callout--info .nx-callout__icon {
+  color: var(--wine);
+}
+
+.nx-callout--success .nx-callout__icon {
+  color: var(--success);
+}
+
+.nx-callout--warning .nx-callout__icon {
+  color: var(--gold-ink);
+}
+
+.nx-callout--danger .nx-callout__icon {
+  color: var(--danger);
+}
+
+.nx-callout__icon .nx-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.nx-callout__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.nx-callout__title {
+  min-height: 22px;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  outline: none;
+}
+
+.nx-callout__title:empty::before {
+  content: "Título del aviso";
+  color: var(--muted);
+}
+
+.nx-callout__text {
+  min-height: 22px;
+  margin-top: 1px;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  outline: none;
+}
+
+.nx-callout__text:empty::before {
+  content: "Escribe el detalle…";
+  color: var(--muted);
+}
+
+/* Menú de tipos y slash --------------------------------------------------- */
+
+.nx-block-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.nx-block-type-grid .nx-menu__item {
+  align-items: flex-start;
+  padding: 7px 8px;
+}
+
+.nx-block-type-grid .nx-menu__item .nx-icon {
+  margin-top: 1px;
+}
+
+.nx-slash {
+  position: absolute;
+  z-index: var(--z-modal);
+  width: 286px;
+  max-height: 326px;
+  overflow-y: auto;
+  padding: var(--space-1);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  background: var(--paper-0);
+  box-shadow: var(--shadow-2);
+}
+
+.nx-slash__label {
+  padding: var(--space-2) var(--space-2) var(--space-1);
+  color: var(--muted-2);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.nx-slash__item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-xs);
+  color: var(--ink-2);
+  text-align: left;
+}
+
+.nx-slash__item:hover,
+.nx-slash__item.is-active {
+  background: var(--paper-2);
+}
+
+.nx-slash__item .nx-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.nx-slash__item-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0;
+}
+
+.nx-slash__item-title {
+  color: var(--ink);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.nx-slash__item-desc {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Pie del editor ---------------------------------------------------------- */
+
+.nx-editor__add {
+  display: flex;
+  width: 100%;
+  min-height: 34px;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: 0 var(--space-2);
+  border: 1px dashed transparent;
+  border-radius: var(--radius-sm);
+  color: var(--muted-2);
+  font-size: var(--text-xs);
+  text-align: left;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.nx-editor__add:hover {
+  border-color: var(--rule-strong);
+  background: var(--paper-2);
+  color: var(--wine);
+}
+
+.nx-editor__add .nx-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.nx-editor__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
+  margin-top: var(--space-4);
+  color: var(--muted-2);
+  font-size: 14px;
+}
+
+.nx-editor__foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nx-editor__foot .nx-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.nx-editor__empty {
+  padding: var(--space-8) var(--space-4);
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.nx-editor__empty h3 {
+  font-size: var(--text-2xl);
+}
+
+.nx-editor__empty p {
+  max-width: 36ch;
+  margin: var(--space-2) auto var(--space-4);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.nx-editor__demo-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid oklch(72% 0.11 85 / 0.36);
+  border-radius: var(--radius-sm);
+  background: var(--gold-soft);
+  color: var(--gold-ink);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.nx-editor__demo-banner .nx-icon {
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  flex: none;
+}
+
+/* Adaptación -------------------------------------------------------------- */
+
+@media (max-width: 719px) {
+  .nx-block {
+    grid-template-columns: minmax(0, 1fr) 20px;
+    margin-inline: -2px;
+    padding-inline: 2px;
+  }
+
+  .nx-block__gutter {
+    display: none;
+  }
+
+  .nx-block__actions {
+    opacity: 0.7;
+  }
+
+  .nx-block__editor--h2 {
+    font-size: var(--text-2xl);
+  }
+
+  .nx-block__editor--h3 {
+    font-size: var(--text-xl);
+  }
+
+  .nx-quoteblock__text {
+    font-size: var(--text-lg);
+  }
+
+  .nx-slash {
+    width: min(286px, calc(100vw - 40px));
+  }
+
+  .nx-codeblock__area {
+    font-size: 14px;
+  }
+}
+
+@media (hover: none) {
+  .nx-block__gutter,
+  .nx-block__actions,
+  .nx-checklist__remove {
+    opacity: 0.72;
+  }
+}
+
+/* Barra de formato -------------------------------------------------------- */
+
+.nx-editor-toolbar {
+  position: sticky;
+  top: calc(var(--topbar-h) + 8px);
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1px;
+  margin-bottom: var(--space-4);
+  padding: 4px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  background: oklch(96.2% 0.014 84 / 0.97);
+  box-shadow: var(--shadow-1);
+}
+
+.nx-editor-toolbar .nx-icon-btn {
+  width: 29px;
+  height: 29px;
+  color: var(--muted);
+}
+
+.nx-editor-toolbar .nx-icon-btn:hover {
+  background: var(--paper-3);
+  color: var(--ink);
+}
+
+.nx-editor-toolbar .nx-icon-btn strong,
+.nx-editor-toolbar .nx-icon-btn em {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.nx-editor-toolbar__rule {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--rule);
+}
+
+@media (max-width: 719px) {
+  .nx-editor-toolbar {
+    top: calc(var(--topbar-h) + 4px);
+  }
+}
+
+@media print {
+  .nx-editor-toolbar {
+    display: none;
+  }
+}

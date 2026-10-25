@@ -1,0 +1,162 @@
+/* ==========================================================================
+   NEXO UNAC · Design tokens
+   Tema: "Biblioteca" — papel cálido, tinta café, vino y oro.
+   Regla: ningún token usa azul. Todos los colores son OKLCH.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Tipografía · 2 + 1 */
+  --font-display: "Newsreader", ui-serif, Georgia, "Times New Roman", serif;
+  --font-body: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Papel */
+  --paper-0: oklch(97.8% 0.008 88);
+  --paper: oklch(96.2% 0.014 84);
+  --paper-2: oklch(93.4% 0.018 82);
+  --paper-3: oklch(90.2% 0.022 80);
+  --paper-4: oklch(86.6% 0.024 78);
+
+  /* Tinta */
+  --ink: oklch(21% 0.022 45);
+  --ink-2: oklch(29% 0.020 45);
+  --muted: oklch(45.5% 0.018 55);
+  --muted-2: oklch(49% 0.016 60);
+  --rule: oklch(82% 0.020 78);
+  --rule-strong: oklch(72% 0.022 78);
+
+  /* Acento principal · vino */
+  --wine: oklch(38% 0.12 15);
+  --wine-2: oklch(31% 0.12 15);
+  --wine-3: oklch(26% 0.10 15);
+  --wine-ink: oklch(34% 0.13 15);
+  --wine-soft: oklch(93.4% 0.030 15);
+  --wine-soft-2: oklch(89% 0.045 15);
+
+  /* Acento secundario · oro viejo (solo detalle, nunca texto pequeño) */
+  --gold: oklch(72% 0.11 85);
+  --gold-2: oklch(58% 0.12 80);
+  --gold-ink: oklch(44% 0.10 78);
+  --gold-soft: oklch(94.5% 0.034 85);
+
+  /* Semánticos */
+  --success: oklch(45% 0.10 150);
+  --success-soft: oklch(93.5% 0.030 150);
+  --warning: oklch(58% 0.12 75);
+  --warning-soft: oklch(94.5% 0.040 80);
+  --danger: oklch(50% 0.17 28);
+  --danger-soft: oklch(94% 0.035 28);
+  --info: oklch(44% 0.055 70);
+  --info-soft: oklch(94% 0.018 80);
+
+  /* Foco */
+  --focus: oklch(45% 0.13 18);
+  --focus-ring: oklch(45% 0.13 18 / 0.32);
+  --selection: oklch(88% 0.055 15);
+
+  /* Sombras tintadas (nunca negro puro) */
+  --shadow-1: 0 1px 2px oklch(21% 0.022 45 / 0.06), 0 1px 1px oklch(21% 0.022 45 / 0.04);
+  --shadow-2: 0 8px 24px oklch(21% 0.022 45 / 0.10), 0 2px 6px oklch(21% 0.022 45 / 0.06);
+  --shadow-3: 0 24px 64px oklch(21% 0.022 45 / 0.18), 0 8px 20px oklch(21% 0.022 45 / 0.08);
+
+  /* Radios */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 22px;
+  --radius-pill: 999px;
+
+  /* Espaciado · escala de 4 pt */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Tipografía · escala 1.25 */
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 2.75rem;
+  --text-display: clamp(2.35rem, 3.6vw + 1rem, 3.5rem);
+  --text-display-s: clamp(2rem, 2.4vw + 1rem, 2.75rem);
+
+  --leading-tight: 1.08;
+  --leading-snug: 1.25;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.65;
+  --tracking-tight: -0.022em;
+  --tracking-wide: 0.06em;
+
+  /* Movimiento */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 260ms;
+
+  /* Estructura */
+  --sidebar-w: 268px;
+  --topbar-h: 58px;
+  --content-max: 860px;
+  --content-wide: 1180px;
+  --rail-w: 344px;
+  --chat-w: 392px;
+
+  /* Capas */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-sidebar: 40;
+  --z-topbar: 50;
+  --z-backdrop: 80;
+  --z-drawer: 90;
+  --z-modal: 100;
+  --z-toast: 120;
+  --z-palette: 140;
+
+  /* Bootstrap bridge — mantiene los componentes nativos dentro del tema */
+  --bs-body-bg: var(--paper);
+  --bs-body-color: var(--ink);
+  --bs-body-font-family: var(--font-body);
+  --bs-body-font-size: var(--text-base);
+  --bs-body-line-height: var(--leading-normal);
+  --bs-primary: var(--wine);
+  --bs-primary-rgb: 116, 42, 55;
+  --bs-secondary: var(--gold-ink);
+  --bs-border-color: var(--rule);
+  --bs-border-radius: var(--radius-md);
+  --bs-border-radius-sm: var(--radius-sm);
+  --bs-border-radius-lg: var(--radius-lg);
+  --bs-link-color: var(--wine);
+  --bs-link-hover-color: var(--wine-2);
+  --bs-focus-ring-color: var(--focus-ring);
+  --bs-emphasis-color: var(--ink);
+  --bs-secondary-color: var(--muted);
+  --bs-tertiary-color: var(--muted-2);
+  --bs-tertiary-bg: var(--paper-2);
+  --bs-form-control-bg: var(--paper-0);
+  --bs-form-control-border-color: var(--rule);
+  --bs-form-select-bg: var(--paper-0);
+}

@@ -1,0 +1,40 @@
+<?php
+/**
+ * Barra superior: dónde estoy, estado de guardado y acceso al tutor.
+ *
+ * @var array|null $currentPage
+ * @var string     $topbarTitle
+ */
+$page = $currentPage ?? null;
+?>
+<header class="nx-topbar" role="banner">
+    <div class="nx-topbar__left">
+        <button class="nx-icon-btn nx-mobile-menu" type="button" data-sidebar-open aria-label="Abrir menú" aria-controls="nx-sidebar" aria-expanded="false">
+            <?= nexo_icon('menu') ?>
+        </button>
+
+        <nav class="nx-breadcrumb" aria-label="Dónde estás">
+            <?php if ($page !== null): ?>
+                <a href="<?= base_url('dashboard') ?>">Inicio</a>
+                <?= nexo_icon('chevron-right') ?>
+                <span class="nx-breadcrumb__current" aria-current="page"><?= esc($page['title']) ?></span>
+            <?php else: ?>
+                <span class="nx-breadcrumb__current" aria-current="page"><?= esc($topbarTitle) ?></span>
+            <?php endif ?>
+        </nav>
+
+        <?php if ($page !== null): ?>
+            <span class="nx-save-state" id="nx-save-state" data-state="saved" aria-live="polite">
+                <?= nexo_icon('check-circle') ?>
+                <span class="nx-save-state__text">Guardado</span>
+            </span>
+        <?php endif ?>
+    </div>
+
+    <div class="nx-topbar__right">
+        <button class="nx-btn nx-btn--tutor nx-btn--sm" type="button" data-chat-toggle aria-controls="nx-chat" aria-expanded="false">
+            <?= nexo_icon('sparkles') ?>
+            <span class="nx-topbar__tutor-label">Preguntar al tutor</span>
+        </button>
+    </div>
+</header>

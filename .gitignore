@@ -1,0 +1,28 @@
+# CodeIgniter4
+.env
+/vendor/
+/writable/cache/*
+!/writable/cache/index.html
+/writable/logs/*
+!/writable/logs/index.html
+/writable/session/*
+!/writable/session/index.html
+/writable/uploads/*
+!/writable/uploads/index.html
+/writable/debugbar/*
+/node_modules/
+/public/build/
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+# IA local
+__pycache__/
+*.pyc
+python/.venv/
+python/out/
+.cache/
+qdrant_storage/
+
+/build/
