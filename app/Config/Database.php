@@ -204,6 +204,11 @@ class Database extends Config
         // Las variables de entorno llegan como string; mysqli exige int.
         $this->default['port'] = (int) $this->default['port'];
 
+        // Un salto de línea pegado en el panel de Render rompe el DNS del host.
+        foreach (['hostname', 'username', 'password', 'database'] as $k) {
+            $this->default[$k] = trim((string) $this->default[$k]);
+        }
+
         // Producción (Aiven): TLS con el CA que escribe docker/start.sh.
         $ca = (string) env('DB_SSL_CA_FILE', '');
         if ($ca !== '' && is_file($ca)) {
