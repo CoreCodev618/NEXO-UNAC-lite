@@ -1,0 +1,50 @@
+# Render Blueprint: cada push a main se despliega solo.
+# Las variables con `sync: false` se llenan en el panel de Render (secretos).
+services:
+  - type: web
+    name: nexo-lite
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /login
+    envVars:
+      - key: CI_ENVIRONMENT
+        value: production
+      - key: cookie_secure
+        value: "true"
+      - key: database_default_hostname
+        sync: false
+      - key: database_default_port
+        sync: false
+      - key: database_default_username
+        sync: false
+      - key: database_default_password
+        sync: false
+      - key: database_default_database
+        sync: false
+      - key: DB_SSL_CA
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: QDRANT_COLLECTION
+        value: nexo_lite
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ALLOWED_EMAIL_DOMAINS
+        value: unac.edu.pe
+      - key: GEMINI_OCR_MODEL
+        value: gemini-3.8-flash
+      - key: EMBED_MODEL
+        value: gemini-embedding-001
+      - key: EMBED_DIM
+        value: "768"
+      - key: RAG_TOP_K
+        value: "8"
+      - key: RAG_MIN_SCORE
+        value: "0.67"

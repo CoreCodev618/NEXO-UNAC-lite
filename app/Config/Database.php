@@ -200,5 +200,14 @@ class Database extends Config
         if (ENVIRONMENT === 'testing') {
             $this->defaultGroup = 'tests';
         }
+
+        // Las variables de entorno llegan como string; mysqli exige int.
+        $this->default['port'] = (int) $this->default['port'];
+
+        // Producción (Aiven): TLS con el CA que escribe docker/start.sh.
+        $ca = (string) env('DB_SSL_CA_FILE', '');
+        if ($ca !== '' && is_file($ca)) {
+            $this->default['encrypt'] = ['ssl_ca' => $ca, 'ssl_verify' => true];
+        }
     }
 }

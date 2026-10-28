@@ -1,0 +1,12 @@
+.env
+.git
+.cache
+vendor
+python/.venv
+tests
+writable/cache/*
+writable/logs/*
+writable/session/*
+writable/uploads/*
+writable/debugbar/*
+!writable/**/index.html
