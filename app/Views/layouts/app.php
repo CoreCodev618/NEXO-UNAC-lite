@@ -8,7 +8,6 @@
  */
 $isDoc    = ! empty($currentPage);
 $pageId   = $isDoc ? (int) $currentPage['id'] : null;
-$security = config('Security');
 ?>
 <!doctype html>
 <html lang="es-PE">
@@ -18,7 +17,6 @@ $security = config('Security');
     <meta name="theme-color" content="oklch(38% 0.12 15)">
     <meta name="csrf-token" content="<?= esc(csrf_hash(), 'attr') ?>">
     <meta name="csrf-header" content="<?= esc(csrf_header(), 'attr') ?>">
-    <meta name="csrf-cookie" content="<?= esc($security->cookieName, 'attr') ?>">
 
     <title><?= esc($pageTitle ?? 'NEXO') ?> · NEXO UNAC</title>
 
@@ -26,7 +24,6 @@ $security = config('Security');
     <link rel="preload" href="<?= base_url('fonts/newsreader-latin.woff2') ?>" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="<?= base_url('fonts/public-sans-latin.woff2') ?>" as="font" type="font/woff2" crossorigin>
 
-    <link rel="stylesheet" href="<?= base_url('vendor/bootstrap/bootstrap.min.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/tokens.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/base.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/components.css') ?>">
@@ -64,7 +61,6 @@ $security = config('Security');
     <?= $this->include('partials/chat-panel') ?>
     <?= $this->include('partials/toast-region') ?>
 
-    <script src="<?= base_url('vendor/bootstrap/bootstrap.bundle.min.js') ?>" defer></script>
     <?php if ($isDoc): ?>
         <script src="<?= base_url('vendor/sortable/Sortable.min.js') ?>" defer></script>
     <?php endif ?>

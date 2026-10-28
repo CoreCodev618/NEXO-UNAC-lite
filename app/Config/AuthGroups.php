@@ -65,7 +65,6 @@ class AuthGroups extends ShieldAuthGroups
      */
     public array $permissions = [
         'users.manage'   => 'Puede asignar roles a otros usuarios',
-        'events.publish' => 'Puede crear y publicar eventos del Tech Radar',
     ];
 
     /**
@@ -77,7 +76,7 @@ class AuthGroups extends ShieldAuthGroups
      * This defines group-level permissions.
      */
     public array $matrix = [
-        'admin'   => ['users.*', 'events.*'],
+        'admin'   => ['users.*'],
         'docente' => [],
         'alumno'  => [],
     ];

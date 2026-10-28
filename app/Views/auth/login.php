@@ -57,10 +57,7 @@ $error     = session('error');
         </div>
 
         <div class="nx-field">
-            <div class="nx-label">
-                <label for="password">Contraseña</label>
-                <button class="nx-link-btn" type="button" data-auth-recovery style="font-size: 14px;">Recuperar acceso</button>
-            </div>
+            <label class="nx-label" for="password">Contraseña</label>
             <div class="nx-auth__password">
                 <input
                     class="nx-input nx-input--lg"

@@ -70,9 +70,13 @@ def _cache_read(key: str, output_dim: int) -> list[float] | None:
 
 
 def _cache_write(key: str, vector: list[float]) -> None:
-    cache = _cache_dir()
-    cache.mkdir(parents=True, exist_ok=True)
-    (cache / f"{key}.json").write_text(json.dumps(vector), encoding="utf-8")
+    """Mejor esfuerzo: sin permisos/espacio la cache no debe tumbar el ingest."""
+    try:
+        cache = _cache_dir()
+        cache.mkdir(parents=True, exist_ok=True)
+        (cache / f"{key}.json").write_text(json.dumps(vector), encoding="utf-8")
+    except OSError:
+        pass
 
 
 def _retry_delay(response, attempt: int) -> float:
@@ -87,17 +91,25 @@ def _retry_delay(response, attempt: int) -> float:
     return min(120.0, 15.0 * (attempt + 1))
 
 
-def _post_with_retry(url: str, payload: dict, headers: dict, timeout: int = 120) -> dict:
+def _post_with_retry(
+    url: str,
+    payload: dict,
+    headers: dict,
+    timeout: float = 120,
+    retries: int = MAX_RETRIES,
+) -> dict:
     import requests
 
     last_error = ""
-    for attempt in range(MAX_RETRIES):
+    for attempt in range(retries):
+        last = attempt + 1 >= retries
         try:
             response = requests.post(url, json=payload, headers=headers, timeout=timeout)
         except requests.RequestException as exc:
             # No incluir exc: su texto puede contener la URL de la peticion.
             last_error = f"{type(exc).__name__} (red/timeout)"
-            time.sleep(min(30.0, 2.0 ** (attempt + 1)))
+            if not last:
+                time.sleep(min(30.0, 2.0 ** (attempt + 1)))
             continue
 
         if response.status_code == 200:
@@ -107,7 +119,7 @@ def _post_with_retry(url: str, payload: dict, headers: dict, timeout: int = 120)
                 raise RuntimeError("Gemini embeddings: respuesta 200 no-JSON") from exc
 
         last_error = f"HTTP {response.status_code}: {response.text[:300]}"
-        if response.status_code in RETRY_STATUS:
+        if response.status_code in RETRY_STATUS and not last:
             time.sleep(_retry_delay(response, attempt))
             continue
         break
@@ -122,11 +134,14 @@ def embed_texts(
     model: str | None = None,
     output_dim: int | None = None,
     return_stats: bool = False,
+    timeout: float = 120,
+    retries: int = MAX_RETRIES,
 ) -> list[list[float]] | tuple[list[list[float]], EmbeddingStats]:
     """Devuelve un vector por texto (mismo orden). Usa cache local cuando puede.
 
     Los textos repetidos se embeben una sola vez y se reutiliza el vector.
     Con `return_stats=True` devuelve `(vectores, EmbeddingStats)`.
+    `timeout`/`retries` aplican a cada request (la consulta usa valores cortos).
     """
     if not texts:
         empty: list[list[float]] = []
@@ -184,7 +199,7 @@ def embed_texts(
                 ]
             }
 
-            data = _post_with_retry(url, payload, headers)
+            data = _post_with_retry(url, payload, headers, timeout, retries)
             embeddings = data.get("embeddings") or []
             if len(embeddings) != len(batch):
                 raise RuntimeError(
@@ -229,7 +244,13 @@ def embed_query(
 ) -> list[float]:
     if not text or not text.strip():
         raise ValueError("La consulta no puede estar vacia")
+    # Interactivo (chat): ~15s y 1 reintento, no los 120s x 5 del ingest.
     vectors = embed_texts(
-        [text], task_type="RETRIEVAL_QUERY", model=model, output_dim=output_dim
+        [text],
+        task_type="RETRIEVAL_QUERY",
+        model=model,
+        output_dim=output_dim,
+        timeout=15,
+        retries=2,
     )
     return vectors[0]

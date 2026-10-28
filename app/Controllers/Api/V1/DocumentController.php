@@ -66,13 +66,7 @@ final class DocumentController extends BaseApiController
         $user = auth()->user();
         $file = $this->request->getFile('file');
 
-        $recent = \Config\Database::connect()
-            ->table('documents')
-            ->where('created_by', (int) $user->id)
-            ->where('created_at >=', date('Y-m-d H:i:s', time() - 60))
-            ->countAllResults();
-
-        if ($recent >= self::MAX_UPLOADS_PER_MINUTE) {
+        if (! service('throttler')->check('upload-' . $user->id, self::MAX_UPLOADS_PER_MINUTE, MINUTE)) {
             return $this->error('Subiste muchos archivos seguidos. Espera un minuto e intenta de nuevo.', 429);
         }
 
@@ -123,6 +117,7 @@ final class DocumentController extends BaseApiController
                 $page = \Config\Database::connect()
                     ->table('pages')
                     ->where('id', $pageId)
+                    ->where('deleted_at', null)
                     ->get()
                     ->getRowArray();
 
@@ -245,6 +240,13 @@ final class DocumentController extends BaseApiController
                 'error' => $message,
             ]);
 
+            // Un timeout puede llegar después del upsert: no dejar fragmentos sueltos.
+            try {
+                (new RagService())->delete($docId);
+            } catch (Throwable) {
+                // Qdrant caído: el reintento del usuario o el borrado los limpiará.
+            }
+
             $row = $this->find($docId);
 
             return $this->error(
@@ -364,20 +366,5 @@ final class DocumentController extends BaseApiController
         [$year, $month, $day] = array_map('intval', explode('-', $value));
 
         return checkdate($month, $day, $year);
-    }
-
-    private function positiveInt(mixed $value): ?int
-    {
-        if (is_int($value)) {
-            return $value > 0 ? $value : null;
-        }
-
-        if (is_string($value) && ctype_digit($value)) {
-            $number = (int) $value;
-
-            return $number > 0 ? $number : null;
-        }
-
-        return null;
     }
 }

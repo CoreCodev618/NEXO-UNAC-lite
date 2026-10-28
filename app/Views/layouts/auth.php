@@ -4,7 +4,6 @@
  *
  * @var string $prefix
  */
-$security = config('Security');
 $authHome = base_url();
 ?>
 <!doctype html>
@@ -16,14 +15,12 @@ $authHome = base_url();
     <meta name="description" content="Entra a NEXO UNAC: tus apuntes y tu material de clase con un tutor.">
     <meta name="csrf-token" content="<?= esc(csrf_hash(), 'attr') ?>">
     <meta name="csrf-header" content="<?= esc(csrf_header(), 'attr') ?>">
-    <meta name="csrf-cookie" content="<?= esc($security->cookieName, 'attr') ?>">
 
     <title><?= $this->renderSection('title') ?: 'NEXO UNAC' ?> · NEXO UNAC</title>
 
     <link rel="icon" href="<?= base_url('favicon.svg') ?>" type="image/svg+xml">
     <link rel="preload" href="<?= base_url('fonts/newsreader-latin.woff2') ?>" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="<?= base_url('fonts/public-sans-latin.woff2') ?>" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="<?= base_url('vendor/bootstrap/bootstrap.min.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/tokens.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/base.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/components.css') ?>">

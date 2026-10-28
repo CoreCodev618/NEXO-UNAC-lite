@@ -2,14 +2,17 @@
 """IA-5: retrieval top-N desde Qdrant con filtros de curso/fecha/tema/doc.
 
 Uso:
-    python/.venv/bin/python python/retrieve.py "consulta" \
+    python/.venv/bin/python python/retrieve.py --json \
         [--top 5] [--curso-id 4] [--class-date 2026-10-19] [--topic "..."] \
-        [--doc-id N] [--min-score 0.7] [--collection nexo_docs] \
-        [--qdrant-url URL] [--json]
+        [--doc-id N] [--doc-ids 1,2,3] [--min-score 0.7] [--collection nexo_docs] \
+        [--qdrant-url URL] -- "consulta"
+
+La salida es siempre JSON en stdout (`--json` se acepta por compatibilidad).
+`--doc-ids` limita a esos documentos; vacio = ninguno (devuelve `[]`).
 
 El embedding de la consulta se calcula **despues** de verificar que Qdrant
 responde, para no gastar cuota si el contenedor esta apagado. El progreso de
-`embeddings.py` va a stderr: `--json` solo escribe JSON en stdout.
+`embeddings.py` va a stderr.
 """
 from __future__ import annotations
 
@@ -23,8 +26,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from nexo import embeddings, vectorstore  # noqa: E402
 
-PREVIEW_CHARS = 240
-
 
 def _positive_int(value: str) -> int:
     try:
@@ -36,31 +37,15 @@ def _positive_int(value: str) -> int:
     return number
 
 
+def _doc_ids_arg(value: str) -> list[int]:
+    return [_positive_int(part) for part in value.split(",") if part.strip()]
+
+
 def _iso_date_arg(value: str) -> str:
     try:
         return vectorstore.normalize_class_date(value)
     except ValueError as exc:
         raise argparse.ArgumentTypeError(str(exc)) from exc
-
-
-def _preview(text: str, limit: int = PREVIEW_CHARS) -> str:
-    flat = " ".join((text or "").split())
-    return flat[:limit] + ("..." if len(flat) > limit else "")
-
-
-def _meta(payload: dict) -> str:
-    parts = []
-    for key, label in (
-        ("curso_id", "curso"),
-        ("class_date", "fecha"),
-        ("topic", "tema"),
-        ("doc_id_str", "doc"),
-        ("chunk_key", "chunk"),
-    ):
-        value = payload.get(key)
-        if value not in (None, ""):
-            parts.append(f"{label}={value}")
-    return " · ".join(parts)
 
 
 def main() -> int:
@@ -72,6 +57,12 @@ def main() -> int:
     parser.add_argument("--topic", default=None)
     parser.add_argument("--doc-id", type=_positive_int, default=None)
     parser.add_argument(
+        "--doc-ids",
+        type=_doc_ids_arg,
+        default=None,
+        help="documents.id permitidos, separados por coma (1,2,3)",
+    )
+    parser.add_argument(
         "--min-score",
         type=float,
         default=None,
@@ -79,7 +70,7 @@ def main() -> int:
     )
     parser.add_argument("--collection", default=vectorstore.DEFAULT_COLLECTION)
     parser.add_argument("--qdrant-url", default=None, help="default: QDRANT_URL del .env")
-    parser.add_argument("--json", action="store_true", help="salida JSON (score + payload)")
+    parser.add_argument("--json", action="store_true", help="ignorado: la salida siempre es JSON")
     args = parser.parse_args()
 
     query = args.query.strip()
@@ -87,12 +78,17 @@ def main() -> int:
         print("ERROR: la consulta no puede estar vacia", file=sys.stderr)
         return 2
 
+    if args.doc_ids == []:
+        print("[]")  # el usuario no tiene documentos: nada que buscar
+        return 0
+
     try:
         filters = vectorstore.build_filter(
             curso_id=args.curso_id,
             class_date=args.class_date,
             topic=args.topic,
             doc_id=args.doc_id,
+            doc_ids=args.doc_ids,
         )
     except ValueError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
@@ -119,34 +115,15 @@ def main() -> int:
         return 2
 
     if not hits:
-        if args.json:
-            print("[]")
         print("Sin resultados para los filtros dados.", file=sys.stderr)
-        return 0
-
-    if args.json:
-        output = [
-            {
-                "score": round(float(hit.get("score", 0.0)), 6),
-                "payload": hit.get("payload") or {},
-            }
-            for hit in hits
-        ]
-        print(json.dumps(output, ensure_ascii=False, indent=2))
-        return 0
-
-    for rank, hit in enumerate(hits, start=1):
-        payload = hit.get("payload") or {}
-        meta = _meta(payload)
-        print(
-            f"{rank}. score={float(hit.get('score', 0.0)):.3f}"
-            + (f"  ({meta})" if meta else "")
-        )
-        source = payload.get("source") or payload.get("file_path") or "?"
-        location = payload.get("location") or "?"
-        print(f"   {source} · {location}")
-        print(f"   {_preview(payload.get('text', ''))}")
-        print()
+    output = [
+        {
+            "score": round(float(hit.get("score", 0.0)), 6),
+            "payload": hit.get("payload") or {},
+        }
+        for hit in hits
+    ]
+    print(json.dumps(output, ensure_ascii=False, indent=2))
     return 0
 
 

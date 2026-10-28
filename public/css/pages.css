@@ -2163,6 +2163,16 @@
   background: var(--wine-soft);
 }
 
+.nx-rag__dropzone:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.is-uploading .nx-rag__dropzone {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 .nx-rag__dropicon {
   display: grid;
   width: 32px;

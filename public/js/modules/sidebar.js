@@ -1,4 +1,4 @@
-import { lockScroll, qs, unlockScroll } from '../core/dom.js';
+import { lockScroll, normalizeText, qs, qsa, unlockScroll } from '../core/dom.js';
 
 export function initSidebar() {
   const sidebar = qs('#nx-sidebar');
@@ -6,6 +6,14 @@ export function initSidebar() {
   const openButton = qs('[data-sidebar-open]');
   const closeButton = qs('[data-sidebar-close]');
   if (!sidebar) return;
+
+  const search = qs('[data-sidebar-search]', sidebar);
+  search?.addEventListener('input', () => {
+    const query = normalizeText(search.value);
+    qsa('.nx-tree__link', sidebar).forEach((link) => {
+      link.hidden = query !== '' && !normalizeText(link.textContent).includes(query);
+    });
+  });
 
   const open = () => {
     if (sidebar.classList.contains('is-open')) return;

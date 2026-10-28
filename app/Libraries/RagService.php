@@ -9,13 +9,12 @@ use RuntimeException;
 /**
  * Puente PHP -> scripts Python del RAG.
  *
- * - `retrieve()` llama `python/retrieve.py --json` y normaliza los hits.
+ * - `retrieve()` llama `python/retrieve.py --json --doc-ids` y normaliza los hits.
  * - `ingest()` llama `python/ingest.py --doc-id` de forma síncrona.
  * - `citations()` convierte `doc_id` de Qdrant en títulos/URLs de MariaDB.
  *
- * MySQL sigue siendo la fuente de verdad del documento; Qdrant solo aporta
- * el fragmento y el score. Si un `doc_id` no existe en `documents` (material
- * ingestado antes de la demo), la cita usa el `source` del payload.
+ * MySQL es la fuente de verdad: un fragmento cuyo `doc_id` no es del usuario
+ * en `documents` nunca llega al tutor.
  */
 final class RagService
 {
@@ -36,45 +35,31 @@ final class RagService
     }
 
     /**
-     * @param array{curso_id?: int, class_date?: string, topic?: string, doc_id?: int} $filters
+     * Fragmentos más parecidos a $query, solo de los documentos de $documents.
+     *
+     * @param array<int, string> $documents doc_id => título (ver documentsFor())
      *
      * @return list<array<string, mixed>>
      */
-    public function retrieve(string $query, array $filters = [], ?int $topK = null): array
+    public function retrieve(string $query, array $documents, ?int $topK = null): array
     {
         $query = trim($query);
         if ($query === '') {
             throw new RuntimeException('La consulta del RAG no puede estar vacía.');
         }
 
-        $limit = max(1, min(10, $topK ?? $this->topK));
-        $args  = [
+        if ($documents === []) {
+            return [];
+        }
+
+        $args = [
             'python/retrieve.py',
             '--json',
             '--top',
-            (string) $limit,
+            (string) max(1, min(10, $topK ?? $this->topK)),
+            '--doc-ids',
+            implode(',', array_keys($documents)),
         ];
-
-        if (($filters['curso_id'] ?? 0) > 0) {
-            $args[] = '--curso-id';
-            $args[] = (string) (int) $filters['curso_id'];
-        }
-
-        if (($filters['doc_id'] ?? 0) > 0) {
-            $args[] = '--doc-id';
-            $args[] = (string) (int) $filters['doc_id'];
-        }
-
-        $date = trim((string) ($filters['class_date'] ?? ''));
-        if ($date !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1) {
-            $args[] = '--class-date';
-            $args[] = $date;
-        }
-
-        $topic = trim((string) ($filters['topic'] ?? ''));
-        if ($topic !== '') {
-            $args[] = '--topic=' . $topic;
-        }
 
         if ($this->minScore > 0) {
             $args[] = '--min-score';
@@ -104,8 +89,10 @@ final class RagService
             }
 
             $normalized = $this->normalizeHit($hit);
-            if ($normalized !== null) {
-                $hits[] = $normalized;
+            // Qdrant ya filtra por doc_id; esto es la segunda barrera (fail-closed).
+            if ($normalized !== null && isset($documents[$normalized['doc_id']])) {
+                $normalized['title'] = $documents[$normalized['doc_id']];
+                $hits[]              = $normalized;
             }
         }
 
@@ -181,48 +168,21 @@ final class RagService
     }
 
     /**
-     * Descarta los hits de documentos subidos por otros usuarios en páginas a las
-     * que $userId no pertenece. Los doc_id que no existen en MariaDB (corpus
-     * histórico compartido) se conservan.
+     * Documentos indexados que $userId subió: el tutor solo consulta estos.
      *
-     * @param list<array<string, mixed>> $hits
-     *
-     * @return list<array<string, mixed>>
+     * @return array<int, string> doc_id => título
      */
-    public function filterAccessible(array $hits, int $userId): array
+    public function documentsFor(int $userId): array
     {
-        if ($hits === []) {
-            return [];
-        }
-
-        $rows = $this->documentsById($hits);
-
-        if ($rows === []) {
-            return $hits;
-        }
-
-        $allowedPages = [];
-        foreach (\Config\Database::connect()
-            ->table('pages p')
-            ->select('p.id')
-            ->join('workspace_members m', 'm.workspace_id = p.workspace_id')
-            ->where('m.user_id', $userId)
-            ->where('p.deleted_at', null)
+        $rows = \Config\Database::connect()
+            ->table('documents')
+            ->select('id, title')
+            ->where('created_by', $userId)
+            ->where('indexed_v2', true)
             ->get()
-            ->getResultArray() as $page) {
-            $allowedPages[(int) $page['id']] = true;
-        }
+            ->getResultArray();
 
-        return array_values(array_filter($hits, static function (array $hit) use ($rows, $allowedPages, $userId): bool {
-            $row = $rows[(int) ($hit['doc_id'] ?? 0)] ?? null;
-
-            if ($row === null) {
-                return true;
-            }
-
-            return (int) ($row['created_by'] ?? 0) === $userId
-                || isset($allowedPages[(int) ($row['page_id'] ?? 0)]);
-        }));
+        return array_column($rows, 'title', 'id');
     }
 
     /**

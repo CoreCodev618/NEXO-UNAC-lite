@@ -523,7 +523,7 @@
   color: var(--danger);
 }
 
-.nx-save-state[data-state="local"] {
+.nx-save-state[data-state="new"] {
   color: var(--muted);
 }
 

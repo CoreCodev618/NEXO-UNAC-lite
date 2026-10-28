@@ -33,19 +33,12 @@ $renderBlockMenu = static function (int|string $id): string {
                 role="textbox"
                 aria-label="Título del apunte"
                 data-page-title-input
-            ><?= esc($page['title']) ?></h1>
+            ><?= $pageId > 0 ? esc($page['title']) : '' ?></h1>
             <p class="nx-doc-head__sub">Escribe aquí. Se guarda solo.</p>
         </div>
     </header>
 
     <div class="nx-doc-body">
-        <div class="nx-editor-toolbar" role="toolbar" aria-label="Formato de texto">
-            <button class="nx-icon-btn" type="button" data-format="bold" aria-label="Negrita" data-tip="Negrita"><strong>B</strong></button>
-            <button class="nx-icon-btn" type="button" data-format="italic" aria-label="Cursiva" data-tip="Cursiva"><em>I</em></button>
-            <button class="nx-icon-btn" type="button" data-format="code" aria-label="Código en línea" data-tip="Código en línea"><?= nexo_icon('code') ?></button>
-            <button class="nx-icon-btn" type="button" data-format="link" aria-label="Insertar enlace" data-tip="Enlace"><?= nexo_icon('link') ?></button>
-        </div>
-
         <div class="nx-editor" data-blocks>
             <?php if ($blocks === []): ?>
                 <div class="nx-block" data-block-id="new-1" data-block-type="parrafo">

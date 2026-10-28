@@ -79,9 +79,6 @@ export const api = {
     create(payload) {
       return request('/pages', { method: 'POST', body: payload });
     },
-    update(id, payload) {
-      return request(`/pages/${id}`, { method: 'PUT', body: payload });
-    },
   },
 
   blocks: {
@@ -110,74 +107,6 @@ export const api = {
         tempId: block.client_id,
         data: { id: block.id },
       }));
-    },
-  },
-
-  comments: {
-    create(payload) {
-      return request('/comments', { method: 'POST', body: payload });
-    },
-  },
-
-  tasks: {
-    create(payload) {
-      return request('/tasks', { method: 'POST', body: payload });
-    },
-    update(id, payload) {
-      return request(`/tasks/${id}`, { method: 'PUT', body: payload });
-    },
-    move(id, payload) {
-      return request(`/tasks/${id}/move`, { method: 'PUT', body: payload });
-    },
-    remove(id) {
-      return request(`/tasks/${id}`, { method: 'DELETE' });
-    },
-  },
-
-  attachments: {
-    upload(pageId, file, onProgress) {
-      return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('page_id', String(pageId));
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `${API_BASE}/attachments`);
-        xhr.withCredentials = true;
-        xhr.setRequestHeader('Accept', 'application/json');
-        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-        Object.entries(csrfHeaders()).forEach(([name, value]) => xhr.setRequestHeader(name, value));
-
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable && typeof onProgress === 'function') {
-            onProgress(Math.round((event.loaded / event.total) * 100));
-          }
-        });
-
-        xhr.addEventListener('load', () => {
-          let payload = null;
-          try {
-            payload = JSON.parse(xhr.responseText || 'null');
-          } catch {
-            payload = null;
-          }
-
-          if (xhr.status >= 200 && xhr.status < 300 && payload?.success !== false) {
-            resolve(payload?.data ?? payload);
-          } else {
-            reject(
-              new ApiError(
-                payload?.message || `No se pudo subir el archivo (${xhr.status}).`,
-                xhr.status,
-                payload,
-              ),
-            );
-          }
-        });
-
-        xhr.addEventListener('error', () => reject(new ApiError('No se pudo conectar con el servidor.', 0, null)));
-        xhr.send(formData);
-      });
     },
   },
 

@@ -1,11 +1,10 @@
 /**
- * Token CSRF de CodeIgniter. Se refresca después de cada petición que
- * devuelve un token nuevo (regeneración o primera petición).
+ * Token CSRF de CodeIgniter. Es estable durante la sesión; si alguna
+ * respuesta trae un X-CSRF-TOKEN nuevo, se adopta.
  */
 
 const tokenMeta = document.querySelector('meta[name="csrf-token"]');
 const headerMeta = document.querySelector('meta[name="csrf-header"]');
-const cookieMeta = document.querySelector('meta[name="csrf-cookie"]');
 
 export function csrfToken() {
   return tokenMeta?.getAttribute('content') || '';
@@ -13,10 +12,6 @@ export function csrfToken() {
 
 export function csrfHeaderName() {
   return headerMeta?.getAttribute('content') || 'X-CSRF-TOKEN';
-}
-
-export function csrfCookieName() {
-  return cookieMeta?.getAttribute('content') || 'csrf_cookie_name';
 }
 
 export function csrfHeaders() {
@@ -33,16 +28,5 @@ export function refreshCsrf(response) {
 
   if (bodyToken && tokenMeta) {
     tokenMeta.setAttribute('content', bodyToken);
-  }
-
-  if (csrfCookieName()) {
-    const cookie = document.cookie
-      .split('; ')
-      .find((entry) => entry.startsWith(`${csrfCookieName()}=`));
-
-    if (cookie && tokenMeta) {
-      const value = decodeURIComponent(cookie.split('=').slice(1).join('='));
-      if (value) tokenMeta.setAttribute('content', value);
-    }
   }
 }

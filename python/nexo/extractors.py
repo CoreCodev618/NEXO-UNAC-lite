@@ -3,10 +3,11 @@
 Formatos soportados:
 - .docx   (Word)                 -> texto de parrafos y tablas
 - .pptx   (PowerPoint)           -> texto por diapositiva + notas del orador
-- .pdf                           -> texto por pagina (si esta escaneado, avisa)
+- .pdf                           -> texto por pagina (si ninguna tiene texto, OCR del PDF)
 - .jpg/.jpeg/.png/.webp          -> OCR con Gemini Vision (pizarras / examenes)
 - archivos/carpetas de codigo    -> se ignora system/, vendor/, writable/, node_modules/
 - .zip                           -> descompresion controlada y se procesa adentro
+                                    (un zip dentro del zip se omite, sin recursion)
 
 Seguridad (zip): rechaza rutas con "..", rutas absolutas y symlinks; limita el
 tamano total descomprimido (200 MB), el numero de entradas (2000) y el tamano
@@ -55,12 +56,8 @@ class Extracted:
     units: list[Unit] = field(default_factory=list)
     # Identidad canonica (ruta relativa al proyecto) para detectar colisiones.
     source_key: str = ""
-    # documents.id de MySQL cuando el ingest recibe --doc-id/--doc-id-map.
+    # documents.id de MySQL (lo asigna el ingest con --doc-id).
     doc_id: int | None = None
-
-    @property
-    def chars(self) -> int:
-        return sum(len(u.text) for u in self.units)
 
 
 @dataclass
@@ -167,6 +164,9 @@ def _extract_zip(path: Path, res: Extraction, source: str) -> None:
             inner = [p for p in sorted(base.rglob("*")) if p.is_file() and not _ignored(p)]
             for i, inner_path in enumerate(inner[:MAX_FILES_PER_DIR], start=1):
                 rel = inner_path.relative_to(base)
+                if inner_path.suffix.lower() == ".zip":
+                    res.warnings.append(f"{source}: zip anidado omitido ({rel}); descomprimelo antes")
+                    continue
                 _extract_file(inner_path, res, source=f"{source} :: {rel}")
             if len(inner) > MAX_FILES_PER_DIR:
                 res.warnings.append(
@@ -251,15 +251,26 @@ def _shape_texts(shapes) -> list[str]:
 
 def _pdf_units(path: Path) -> list[Unit]:
     from pypdf import PdfReader
+    from pypdf.errors import DependencyError, FileNotDecryptedError
 
-    reader = PdfReader(str(path))
-    units: list[Unit] = []
-    for idx, page in enumerate(reader.pages, start=1):
-        text = (page.extract_text() or "").strip()
-        if not text:
-            text = "[pagina sin texto extraible: probablemente escaneada; requiere OCR de PDF]"
-        units.append(Unit(f"pagina {idx}", text))
-    return units
+    try:
+        reader = PdfReader(str(path))
+        texts = [(page.extract_text() or "").strip() for page in reader.pages]
+    except (DependencyError, FileNotDecryptedError) as exc:
+        # Contrasena de apertura, o cifrado AES sin la libreria `cryptography`.
+        raise RuntimeError(
+            "PDF protegido con contraseña; quita la protección y vuelve a subirlo"
+        ) from exc
+    units = _page_units(texts)
+    if units:
+        return units
+    # Ninguna pagina con texto: PDF escaneado -> OCR del documento completo.
+    return [Unit("pdf (OCR)", ocr.ocr_image(path))]
+
+
+def _page_units(texts: list[str]) -> list[Unit]:
+    """Una unidad por pagina con texto; las paginas vacias no se indexan."""
+    return [Unit(f"pagina {idx}", text) for idx, text in enumerate(texts, start=1) if text]
 
 
 def _code_units(path: Path, res: Extraction, source: str) -> list[Unit]:

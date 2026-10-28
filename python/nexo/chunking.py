@@ -6,9 +6,8 @@ para poder citar la fuente despues.
 """
 from __future__ import annotations
 
-import hashlib
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 try:
     import tiktoken
@@ -20,17 +19,21 @@ DEFAULT_OVERLAP_TOKENS = 50
 
 _SENTENCE_RE = re.compile(r"(?<=[.!?;:])\s+|\n+")
 _ENC = None
+_ENC_FAILED = False
 
 
 def _encoding():
-    global _ENC
-    if _ENC is None and tiktoken is not None:
-        _ENC = tiktoken.get_encoding("cl100k_base")
+    global _ENC, _ENC_FAILED
+    if _ENC is None and tiktoken is not None and not _ENC_FAILED:
+        try:
+            _ENC = tiktoken.get_encoding("cl100k_base")
+        except Exception:  # noqa: BLE001 - p. ej. sin red para bajar el BPE
+            _ENC_FAILED = True  # se usa la estimacion ~4 chars/token
     return _ENC
 
 
 def count_tokens(text: str) -> int:
-    """Tokens reales (cl100k_base); si falta tiktoken, aproxima ~4 chars/token."""
+    """Tokens reales (cl100k_base); sin tiktoken/encoding, aproxima ~4 chars/token."""
     enc = _encoding()
     if enc is None:
         return max(1, len(text) // 4)
@@ -46,17 +49,11 @@ class Chunk:
     kind: str
     location: str
     tokens: int
-    metadata: dict = field(default_factory=dict)
     source_key: str = ""
 
     @property
     def chunk_id(self) -> str:
         return f"{self.doc_id}-{self.chunk_index}"
-
-
-def stable_doc_id(source: str) -> int:
-    """doc_id estable (60 bits, 15 hex) derivado de la etiqueta de fuente."""
-    return int(hashlib.sha256(source.encode("utf-8")).hexdigest()[:15], 16)
 
 
 def _string_windows(text: str, max_chars: int, overlap_chars: int) -> list[str]:
@@ -171,42 +168,19 @@ def split_text(
 def chunk_extraction(
     items,
     *,
-    doc_id_start: int = 1,
-    stable_ids: bool = False,
-    curso_id: int = 1,
-    class_date: str = "",
-    topic: str = "",
     max_tokens: int = DEFAULT_CHUNK_TOKENS,
     overlap_tokens: int = DEFAULT_OVERLAP_TOKENS,
 ) -> list[Chunk]:
-    """Convierte una lista de `extractors.Extracted` en chunks con metadata."""
+    """Convierte `extractors.Extracted` (con `doc_id` ya asignado) en chunks."""
     chunks: list[Chunk] = []
 
-    for offset, item in enumerate(items):
-        explicit_doc_id = getattr(item, "doc_id", None)
-        if explicit_doc_id is not None:
-            doc_id = int(explicit_doc_id)
-        elif stable_ids:
-            doc_id = stable_doc_id(item.source)
-        else:
-            doc_id = doc_id_start + offset
+    for item in items:
+        doc_id = int(item.doc_id)
         source_key = getattr(item, "source_key", "") or item.source
         chunk_index = 0
 
         for unit in item.units:
             for part in split_text(unit.text, max_tokens=max_tokens, overlap_tokens=overlap_tokens):
-                metadata = {
-                    "doc_id": doc_id,
-                    "chunk_index": chunk_index,
-                    "curso_id": curso_id,
-                    "class_date": class_date,
-                    "topic": topic,
-                    "file_path": item.source,
-                    "source": item.source,
-                    "source_key": source_key,
-                    "location": unit.location,
-                    "kind": item.kind,
-                }
                 chunks.append(
                     Chunk(
                         text=part,
@@ -216,7 +190,6 @@ def chunk_extraction(
                         kind=item.kind,
                         location=unit.location,
                         tokens=count_tokens(part),
-                        metadata=metadata,
                         source_key=source_key,
                     )
                 )

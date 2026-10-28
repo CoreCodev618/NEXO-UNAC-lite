@@ -11,12 +11,13 @@ def main() -> int:
         print("ERROR: uso: delete.py <doc_id>", file=sys.stderr)
         return 2
     store = vectorstore.QdrantStore()
-    store._request(
-        "POST",
-        f"/collections/{store.collection}/points/delete",
-        {"filter": vectorstore.build_filter(doc_id=int(sys.argv[1]))},
-        {"wait": "true"},
-    )
+    try:
+        store.delete_by_filter(vectorstore.build_filter(doc_id=int(sys.argv[1])))
+    except vectorstore.QdrantError as exc:
+        if exc.status == 404:  # sin coleccion: no hay nada que borrar
+            return 0
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
     return 0
 
 

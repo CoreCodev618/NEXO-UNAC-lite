@@ -9,18 +9,7 @@
  * @var string|null $errorSecondaryMode  back|reload
  * @var string      $errorSecondaryLabel
  */
-$requestPath = '';
-
-if (function_exists('service')) {
-    try {
-        $requestPath = trim(service('request')->getPath(), '/');
-    } catch (Throwable) {
-        $requestPath = trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
-    }
-}
-
-$isPreview  = str_starts_with($requestPath, 'preview');
-$home       = base_url($isPreview ? 'preview/dashboard' : '/');
+$home       = base_url('/');
 $secondary  = $errorSecondaryMode ?? null;
 ?>
 <!doctype html>
@@ -32,7 +21,6 @@ $secondary  = $errorSecondaryMode ?? null;
     <meta name="robots" content="noindex">
     <title><?= esc($errorTitle) ?> · NEXO UNAC</title>
     <link rel="icon" href="<?= base_url('favicon.svg') ?>" type="image/svg+xml">
-    <link rel="stylesheet" href="<?= base_url('vendor/bootstrap/bootstrap.min.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/tokens.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/base.css') ?>">
     <link rel="stylesheet" href="<?= base_url('css/components.css') ?>">

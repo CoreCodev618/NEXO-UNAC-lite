@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controllers\Api\V1;
 
-use App\Libraries\NexoRepository;
 use App\Models\BlockModel;
 use App\Models\PageModel;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -25,7 +24,7 @@ final class PageController extends BaseApiController
         $data        = $this->payload();
         $workspaceId = (int) ($data['workspace_id'] ?? 0);
 
-        if ($guard = $this->guardWorkspace($workspaceId)) {
+        if ($guard = $this->guardWorkspace($workspaceId, true)) {
             return $guard;
         }
 
@@ -67,17 +66,6 @@ final class PageController extends BaseApiController
         return $this->ok($this->pages->find((int) $id), 201);
     }
 
-    public function show(string $id): ResponseInterface
-    {
-        $page = (new NexoRepository())->page((int) $id, (int) auth()->id());
-
-        if ($page === null) {
-            return $this->error('Página no encontrada.', 404);
-        }
-
-        return $this->ok($page);
-    }
-
     public function update(string $id): ResponseInterface
     {
         $pageId = (int) $id;
@@ -87,7 +75,7 @@ final class PageController extends BaseApiController
             return $this->error('Página no encontrada.', 404);
         }
 
-        if ($guard = $this->guardWorkspace((int) $page['workspace_id'])) {
+        if ($guard = $this->guardWorkspace((int) $page['workspace_id'], true)) {
             return $guard;
         }
 
@@ -139,6 +127,11 @@ final class PageController extends BaseApiController
 
                 if ($encoded === false) {
                     throw new \InvalidArgumentException('content no se pudo serializar a JSON.');
+                }
+
+                // blocks.content es TEXT: MariaDB truncaría el JSON en silencio.
+                if (strlen($encoded) > 65535) {
+                    throw new \InvalidArgumentException('Un bloque es demasiado largo. Divídelo en varios.');
                 }
 
                 $row = [

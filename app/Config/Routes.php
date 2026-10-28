@@ -23,9 +23,7 @@ $routes->group('api/v1', [
     'namespace' => 'App\Controllers\Api\V1',
     'filter'    => ['apiauth', 'jsonpayload'],
 ], static function (RouteCollection $routes): void {
-    $routes->get('me', 'MeController::show');
     $routes->post('pages', 'PageController::create');
-    $routes->get('pages/(:num)', 'PageController::show/$1');
     $routes->put('pages/(:num)', 'PageController::update/$1');
     $routes->post('chat', 'AIChatController::send');
     $routes->get('documents', 'DocumentController::index');

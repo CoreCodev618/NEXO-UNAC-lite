@@ -2,7 +2,6 @@ import { api, ApiError } from '../core/api.js';
 import {
   appUrl,
   escapeHtml,
-  focusables,
   lockScroll,
   qs,
   qsa,
@@ -41,7 +40,7 @@ function messageShell(role, html) {
   wrapper.dataset.chatMessage = '';
 
   const avatar = user
-    ? `<span class="nx-avatar nx-avatar--sm nx-avatar--wine nx-msg__avatar" aria-hidden="true">${initials(document.body.dataset.userName || '')}</span>`
+    ? `<span class="nx-avatar nx-avatar--sm nx-avatar--wine nx-msg__avatar" aria-hidden="true">${escapeHtml(initials(document.body.dataset.userName || ''))}</span>`
     : `<span class="nx-msg__avatar nx-chat__head-icon" aria-hidden="true">${icon('sparkles')}</span>`;
 
   wrapper.innerHTML = `
@@ -81,7 +80,7 @@ function appendFallback() {
   const main = qs('.nx-msg__main', element);
   const note = document.createElement('div');
   note.className = 'nx-msg__note';
-  note.innerHTML = `${icon('info')}<span>El servicio del tutor no está disponible ahora. Tus páginas y el buscador siguen funcionando.</span>`;
+  note.innerHTML = `${icon('info')}<span>El servicio del tutor no está disponible ahora. Tus apuntes siguen funcionando.</span>`;
   main?.appendChild(note);
   scrollToEnd();
 }
@@ -152,16 +151,6 @@ async function send(message) {
   input.style.height = 'auto';
   appendUserMessage(text);
 
-  if (document.body.dataset.preview === '1') {
-    window.setTimeout(() => {
-      appendFallback();
-      sending = false;
-      sendButton.disabled = false;
-      input.focus();
-    }, 260);
-    return;
-  }
-
   const typing = appendTyping();
 
   try {
@@ -189,6 +178,12 @@ async function send(message) {
 
     const safeReply = escapeHtml(String(reply)).replace(/\r?\n/g, '<br>');
     const element = appendMessage('assistant', safeReply);
+    if (response?.degraded) {
+      const note = document.createElement('div');
+      note.className = 'nx-msg__note';
+      note.innerHTML = `${icon('alert-triangle')}<span>Respondí sin consultar tu material: el buscador de material falló.</span>`;
+      qs('.nx-msg__main', element)?.appendChild(note);
+    }
     const sources = renderSources(response);
     if (sources) {
       qs('.nx-msg__main', element)?.appendChild(sources);
@@ -265,8 +260,6 @@ export function initChat() {
   qsa('[data-chat-new]').forEach((button) => button.addEventListener('click', resetConversation));
   qs('.nx-chat__backdrop')?.addEventListener('click', closeChat);
 
-  document.addEventListener('nx:open-chat', openChat);
-
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && chat.classList.contains('is-open')) {
       event.preventDefault();
@@ -278,10 +271,10 @@ export function initChat() {
       trapFocus(chat, event);
     }
 
-    const usesMod = event.metaKey || event.ctrlKey;
-    if (usesMod && event.shiftKey && event.key.toLowerCase() === 't') {
+    // Ctrl+/ (⌘/ en Mac). En teclados latinos «/» es Mayús+7, por eso no se filtra Shift.
+    if ((event.metaKey || event.ctrlKey) && event.key === '/') {
       event.preventDefault();
-      openChat();
+      if (!chat.classList.contains('is-open')) openChat();
     }
   });
 

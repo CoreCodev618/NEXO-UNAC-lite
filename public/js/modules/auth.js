@@ -1,6 +1,5 @@
 import { qs, qsa } from '../core/dom.js';
 import { icon } from '../core/icons.js';
-import { toast } from '../core/toast.js';
 
 function initPasswordToggles() {
   qsa('[data-password-toggle]').forEach((button) => {
@@ -92,47 +91,9 @@ function initConfirmPassword() {
   confirmation.addEventListener('input', validate);
 }
 
-function initPreviewForms() {
-  qsa('[data-preview-form]').forEach((form) => {
-    form.addEventListener('submit', (event) => {
-      event.preventDefault();
-
-      if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
-
-      const submit = qs('button[type="submit"]', form);
-      submit?.classList.add('is-loading');
-      if (submit) submit.disabled = true;
-
-      const target = form.dataset.demoRedirect;
-      if (!target) return;
-
-      window.setTimeout(() => {
-        window.location.href = target;
-      }, 520);
-    });
-  });
-}
-
-function initRecovery() {
-  qsa('[data-auth-recovery]').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      event.preventDefault();
-      toast.warning(
-        'La recuperación de contraseña todavía no está disponible.',
-        'Recuperación pendiente',
-      );
-    });
-  });
-}
-
 export function initAuth() {
   initPasswordToggles();
   initCapsWarnings();
   initStrength();
   initConfirmPassword();
-  initPreviewForms();
-  initRecovery();
 }

@@ -37,11 +37,6 @@ final class PythonRunner
         }
     }
 
-    public function binary(): string
-    {
-        return $this->binary;
-    }
-
     /**
      * @param list<string> $args argumentos del script, empezando por la ruta .py
      *

@@ -51,7 +51,7 @@ final class AIChatController extends BaseApiController
             $pageContext = null;
         }
 
-        if ($this->recentMessages($userId) >= self::MAX_MESSAGES_PER_MINUTE) {
+        if (! service('throttler')->check('chat-' . $userId, self::MAX_MESSAGES_PER_MINUTE, MINUTE)) {
             return $this->error('Estás preguntando muy rápido. Espera unos segundos e intenta de nuevo.', 429);
         }
 
@@ -75,7 +75,7 @@ final class AIChatController extends BaseApiController
         $ragError  = null;
 
         try {
-            $hits = $rag->filterAccessible($rag->retrieve($message), $userId);
+            $hits = $rag->retrieve($message, $rag->documentsFor($userId));
         } catch (\Throwable $error) {
             $ragError = $error->getMessage();
             log_message('warning', 'RAG retrieval falló: {error}', ['error' => $ragError]);
@@ -379,17 +379,6 @@ PROMPT;
         }
     }
 
-    private function recentMessages(int $userId): int
-    {
-        return \Config\Database::connect()
-            ->table('chat_messages m')
-            ->join('chat_sessions s', 's.id = m.session_id')
-            ->where('s.user_id', $userId)
-            ->where('m.role', 'user')
-            ->where('m.created_at >=', date('Y-m-d H:i:s', time() - 60))
-            ->countAllResults();
-    }
-
     private function pageExists(int $pageId): bool
     {
         return \Config\Database::connect()
@@ -397,20 +386,5 @@ PROMPT;
             ->where('id', $pageId)
             ->where('deleted_at', null)
             ->countAllResults() > 0;
-    }
-
-    private function positiveInt(mixed $value): ?int
-    {
-        if (is_int($value)) {
-            return $value > 0 ? $value : null;
-        }
-
-        if (is_string($value) && ctype_digit($value)) {
-            $number = (int) $value;
-
-            return $number > 0 ? $number : null;
-        }
-
-        return null;
     }
 }

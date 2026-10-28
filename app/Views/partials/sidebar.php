@@ -35,6 +35,14 @@ $onHome    = $activeNav === 'dashboard' && empty($currentPage);
             <div class="nx-sidebar__label"><span>Mis apuntes</span></div>
 
             <?php if ($sidebarPages !== []): ?>
+                <input
+                    class="nx-input nx-input--sm nx-sidebar__search"
+                    type="search"
+                    placeholder="Buscar apuntes"
+                    aria-label="Buscar apuntes"
+                    autocomplete="off"
+                    data-sidebar-search
+                >
                 <div class="nx-tree">
                     <?= nexo_page_tree($sidebarPages, isset($currentPage['id']) ? (int) $currentPage['id'] : null, $prefix) ?>
                 </div>

@@ -34,10 +34,7 @@ let dirty = false;
 let saving = false;
 let pendingSave = false;
 let lastErrorToast = 0;
-
-function isPreview() {
-  return document.body.dataset.preview === '1';
-}
+let lastCell = null;
 
 function blockIdForNew() {
   return `new-${uid('b')}`;
@@ -242,19 +239,6 @@ function collect() {
   return { title, blocks };
 }
 
-function updateWordCount() {
-  const target = qs('[data-word-count]');
-  if (!target || !blocksRoot) return;
-  let words = 0;
-
-  qsa('.nx-block__main', blocksRoot).forEach((main) => {
-    const text = (main.innerText || '').replace(/\u00a0/g, ' ').trim();
-    if (text) words += text.split(/\s+/).filter(Boolean).length;
-  });
-
-  target.textContent = String(words);
-}
-
 function saveState(state, label) {
   const element = qs('#nx-save-state');
   if (!element) return;
@@ -263,37 +247,9 @@ function saveState(state, label) {
   if (text) text.textContent = label;
   const use = qs('use', element);
   if (use) {
-    const iconName = state === 'error' ? 'alert-circle' : state === 'saving' ? 'loader' : state === 'local' ? 'check-circle' : 'check-circle';
+    const iconName = state === 'error' ? 'alert-circle' : state === 'saving' ? 'loader' : 'check-circle';
     const base = (document.body.dataset.base || '/').replace(/\/?$/, '/');
     use.setAttribute('href', `${base}icons/sprite.svg#i-${iconName}`);
-  }
-}
-
-function storageKey() {
-  const workspaceId = editor?.dataset.pageWorkspace || document.body.dataset.workspaceId || 0;
-  return `nexo:draft:${pageId > 0 ? pageId : `new-${workspaceId}`}`;
-}
-
-function readLocal() {
-  if (pageId <= 0) return null;
-
-  try {
-    const draft = JSON.parse(localStorage.getItem(storageKey()) || 'null');
-    if (!draft || !Array.isArray(draft.blocks) || draft.blocks.length === 0) return null;
-    return draft;
-  } catch {
-    return null;
-  }
-}
-
-function writeLocal(title, blocks) {
-  try {
-    localStorage.setItem(
-      storageKey(),
-      JSON.stringify({ title, blocks, savedAt: new Date().toISOString() }),
-    );
-  } catch {
-    // localStorage puede estar lleno o deshabilitado; el estado visual sigue siendo local.
   }
 }
 
@@ -303,48 +259,66 @@ function updatePageChrome(title) {
   document.body.dataset.pageTitle = safeTitle;
   const current = qs('.nx-breadcrumb__current');
   if (current) current.textContent = safeTitle;
+  const link = qs('#nx-sidebar .nx-tree__link.is-active span');
+  if (link) link.textContent = safeTitle;
+}
+
+/** Añade la página recién creada a «Mis apuntes» (mismo markup que nexo_page_tree). */
+function addToSidebar(id, title) {
+  let tree = qs('#nx-sidebar .nx-tree');
+  if (!tree) {
+    tree = document.createElement('div');
+    tree.className = 'nx-tree';
+    const empty = qs('#nx-sidebar .nx-tree__more');
+    if (empty) empty.replaceWith(tree);
+    else qs('#nx-sidebar .nx-nav__new')?.before(tree);
+  }
+  qsa('.nx-tree__link.is-active', tree).forEach((link) => {
+    link.classList.remove('is-active');
+    link.removeAttribute('aria-current');
+  });
+  const link = document.createElement('a');
+  link.className = 'nx-tree__link is-active';
+  link.style.setProperty('--depth', '0');
+  link.href = appUrl(`pages/${id}`);
+  link.setAttribute('aria-current', 'page');
+  link.innerHTML = `${icon('file-text')}<span>${escapeHtml(title || 'Página sin título')}</span>`;
+  tree.appendChild(link);
 }
 
 function applyCreatedIds(results) {
   (results || []).forEach((result) => {
     if (!result?.tempId || !result?.data?.id) return;
     const block = qsa('.nx-block', blocksRoot).find((candidate) => candidate.dataset.blockId === String(result.tempId));
-    if (block) block.dataset.blockId = String(result.data.id);
+    if (block) {
+      block.dataset.blockId = String(result.data.id);
+    } else if (!/^\d+$/.test(String(result.tempId))) {
+      // El bloque se creó en el servidor pero se borró mientras se guardaba.
+      deletedIds.push(Number(result.data.id));
+      markDirty();
+    }
   });
 }
 
 async function persist() {
+  if (!editor || !blocksRoot) return;
+
   if (saving) {
+    dirty = true;
     pendingSave = true;
     return;
   }
 
-  if (!editor || !blocksRoot) return;
   saving = true;
+  dirty = false;
   saveState('saving', 'Guardando…');
 
   const { title, blocks } = collect();
   const finalTitle = title || 'Página sin título';
-
-  if (!title) {
-    const field = qs('[data-page-title-input]');
-    if (field) field.textContent = finalTitle;
-  }
   updatePageChrome(finalTitle);
 
-  if (isPreview()) {
-    writeLocal(finalTitle, blocks);
-    window.setTimeout(() => {
-      saveState('local', 'Guardado local');
-      updateWordCount();
-      saving = false;
-      if (pendingSave) {
-        pendingSave = false;
-        scheduleSave();
-      }
-    }, 180);
-    return;
-  }
+  const sentDeletedIds = deletedIds;
+  deletedIds = [];
 
   try {
     if (pageId <= 0) {
@@ -361,23 +335,20 @@ async function persist() {
       editor.dataset.pageId = String(pageId);
       document.body.dataset.pageId = String(pageId);
       window.history.replaceState({}, '', appUrl(`pages/${pageId}`));
+      addToSidebar(pageId, finalTitle);
     }
 
     const results = await api.blocks.savePage(pageId, {
       title: finalTitle,
       blocks,
-      deletedIds,
+      deletedIds: sentDeletedIds,
     });
 
     applyCreatedIds(results);
-    deletedIds = [];
-    saveState('saved', 'Guardado');
-    const updated = qs('[data-page-updated]');
-    if (updated) {
-      updated.innerHTML = `${icon('clock')} Hace un momento`;
-    }
-    updateWordCount();
+    if (!dirty) saveState('saved', 'Guardado');
   } catch (error) {
+    deletedIds = [...sentDeletedIds, ...deletedIds];
+    dirty = true;
     saveState('error', 'Sin guardar');
 
     if (Date.now() - lastErrorToast > 10000) {
@@ -401,15 +372,11 @@ async function persist() {
 }
 
 const scheduleSave = debounce(() => {
-  if (dirty) {
-    dirty = false;
-    persist();
-  }
+  if (dirty) persist();
 }, 700);
 
 function markDirty() {
   dirty = true;
-  updateWordCount();
   scheduleSave();
 }
 
@@ -535,7 +502,7 @@ function handleTableAction(action, button) {
 
   if (action === 'del-row') {
     const rows = qsa('tbody tr', table);
-    const activeRow = document.activeElement?.closest('tr');
+    const activeRow = lastCell?.closest('tr');
     const row = activeRow && body?.contains(activeRow) ? activeRow : rows[rows.length - 1];
     if (!row) return;
     if (rows.length <= 1) {
@@ -549,7 +516,7 @@ function handleTableAction(action, button) {
 
   if (action === 'del-col') {
     const headers = qsa('thead th', table);
-    const activeCell = document.activeElement?.closest('th, td');
+    const activeCell = lastCell && table.contains(lastCell) ? lastCell.closest('th, td') : null;
     const index = activeCell ? activeCell.cellIndex : headers.length - 1;
 
     if (headers.length <= 1) {
@@ -672,52 +639,6 @@ function closeSlash() {
   slashTarget = null;
 }
 
-function applyFormat(command) {
-  const active = document.activeElement;
-  const inEditor = active?.closest?.('[contenteditable="true"]');
-  if (!inEditor && !window.getSelection()?.rangeCount) {
-    toast.info('Coloca el cursor dentro de un párrafo para aplicar formato.', 'Sin selección');
-    return;
-  }
-
-  if (command === 'undo' || command === 'redo') {
-    document.execCommand(command);
-    markDirty();
-    return;
-  }
-
-  if (command === 'code') {
-    const selection = window.getSelection();
-    const selected = selection?.toString() || '';
-    if (selected) {
-      document.execCommand('insertHTML', false, `<code>${escapeHtml(selected)}</code>`);
-    } else {
-      document.execCommand('insertHTML', false, '<code></code>');
-    }
-    markDirty();
-    return;
-  }
-
-  if (command === 'link') {
-    const url = window.prompt('Dirección del enlace (https://…)', 'https://');
-    if (!url) return;
-    if (!/^(https?:\/\/|mailto:|\/)/i.test(url)) {
-      toast.warning('Usa un enlace que empiece por https://, mailto: o /.', 'Enlace no válido');
-      return;
-    }
-    document.execCommand('createLink', false, url);
-    markDirty();
-    return;
-  }
-
-  if (command === 'clear') {
-    document.execCommand('removeFormat');
-  } else {
-    document.execCommand(command);
-  }
-  markDirty();
-}
-
 function handleBlockAction(action, button) {
   const block = button.closest('.nx-block');
   if (!block) return;
@@ -830,7 +751,7 @@ function bindEditorEvents() {
     }
 
     const slashField = event.target.closest('.nx-block__editor[data-field="text"]');
-    if (event.key === '/' && slashField) {
+    if (event.key === '/' && slashField && !event.ctrlKey && !event.metaKey) {
       const text = (slashField.innerText || '').trim();
       if (text === '') {
         event.preventDefault();
@@ -847,7 +768,8 @@ function bindEditorEvents() {
   });
 
   blocksRoot.addEventListener('focusin', (event) => {
-    if (event.target.closest('.nx-block')) updateWordCount();
+    const cell = event.target.closest('.nx-tableblock__cell');
+    if (cell) lastCell = cell;
   });
 }
 
@@ -869,11 +791,6 @@ function bindPageEvents() {
     document.execCommand('insertText', false, text);
   });
 
-  qsa('[data-format]').forEach((button) => {
-    button.addEventListener('mousedown', (event) => event.preventDefault());
-    button.addEventListener('click', () => applyFormat(button.dataset.format));
-  });
-
   qsa('[data-editor-add]').forEach((button) => {
     button.addEventListener('click', (event) => {
       event.preventDefault();
@@ -885,10 +802,14 @@ function bindPageEvents() {
   document.addEventListener('keydown', (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
       event.preventDefault();
-      if (dirty) {
-        dirty = false;
-        persist();
-      }
+      persist();
+    }
+  });
+
+  window.addEventListener('beforeunload', (event) => {
+    if (dirty || saving) {
+      event.preventDefault();
+      event.returnValue = '';
     }
   });
 }
@@ -904,28 +825,8 @@ export function initEditor() {
     blocksRoot.appendChild(buildBlock('parrafo'));
   }
 
-  const draft = isPreview() ? readLocal() : null;
-  if (draft) {
-    blocksRoot.replaceChildren(
-      ...draft.blocks.map((block) =>
-        buildBlock(block.type || 'parrafo', block.content || {}, block.content?.style || 'p'),
-      ),
-    );
-
-    if (draft.title) {
-      const titleField = qs('[data-page-title-input]');
-      if (titleField) titleField.textContent = draft.title;
-      updatePageChrome(draft.title);
-    }
-  }
-
   bindEditorEvents();
   bindPageEvents();
-  updateWordCount();
-  saveState(
-    isPreview() ? 'local' : 'saved',
-    draft ? 'Borrador local' : (isPreview() ? 'Vista local' : 'Guardado'),
-  );
 
   if (window.Sortable) {
     new window.Sortable(blocksRoot, {

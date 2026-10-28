@@ -59,10 +59,7 @@ export function initDropdowns() {
     }
 
     if (openMenu && event.target.closest('.nx-menu__item, [role="menuitem"]')) {
-      const shouldStayOpen = event.target.closest('[data-menu-keep-open]');
-      if (!shouldStayOpen) {
-        closeMenu();
-      }
+      closeMenu();
     }
   });
 

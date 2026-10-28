@@ -3,8 +3,6 @@
 namespace Config;
 
 use App\Filters\ApiAuthFilter;
-use App\Filters\ApiKeyFilter;
-use App\Filters\CsrfTokenHeader;
 use App\Filters\JsonPayloadFilter;
 use CodeIgniter\Config\Filters as BaseFilters;
 use CodeIgniter\Filters\Cors;
@@ -40,13 +38,10 @@ class Filters extends BaseFilters
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
         'apiauth'       => ApiAuthFilter::class,
-        'apikey'        => ApiKeyFilter::class,
-        'csrftoken'     => CsrfTokenHeader::class,
         'jsonpayload'   => JsonPayloadFilter::class,
 
-        // Alias de la ruta /events. Shield ya lo aporta por su Registrar
-        // (auto-descubrimiento de paquetes); se declara aquí para que el
-        // comportamiento no dependa de ese descubrimiento.
+        // Shield ya lo aporta por su Registrar (auto-descubrimiento de
+        // paquetes); se declara aquí para no depender de ese descubrimiento.
         'session'       => SessionAuth::class,
     ];
 
@@ -85,16 +80,10 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            'csrf' => ['except' => ['api/v1/events/ingest']],
+            'csrf',
         ],
         'after' => [
-            // Con `Security::$regenerate = true`, CI4 rota el token CSRF en
-            // cada POST. El header permite que el JS se actualice y no reciba
-            // 403 en el siguiente envío.
-            'csrftoken' => ['except' => ['api/v1/events/ingest']],
-            // La barra de depuración consulta Shield/Settings y, por tanto, la
-            // base de datos. Las rutas de previsualización funcionan sin MariaDB.
-            'toolbar' => ['except' => ['preview', 'preview/*']],
+            'toolbar',
             // 'honeypot',
             // 'secureheaders',
         ],

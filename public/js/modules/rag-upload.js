@@ -54,6 +54,7 @@ function status(root, text, state = '') {
 }
 
 async function upload(root, file) {
+  if (root.classList.contains('is-uploading')) return;
   const maxMb = Number(root.dataset.ragMaxMb || 20);
 
   if (!ALLOWED.has(extension(file.name))) return status(root, 'Ese formato no se puede leer. Usa PDF, Word, PowerPoint, foto o ZIP.', 'error');

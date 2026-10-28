@@ -1,8 +1,7 @@
 """Cliente REST minimo para Qdrant (IA-5), sin SDK.
 
 Solo cubre lo que necesita el pipeline RAG: crear/validar la coleccion,
-indices de payload, upsert por lotes, scroll/delete, count y busqueda con
-filtros.
+indices de payload, upsert por lotes, scroll/delete y busqueda con filtros.
 
 Decisiones:
 - `point_id` es UUID5 determinista de `"nexo:{doc_id}:{chunk_index}"`, de modo
@@ -39,7 +38,6 @@ RETRY_STATUS = {429, 500, 502, 503, 504}
 PAYLOAD_INDEXES: dict[str, str] = {
     "chunk_id": "integer",
     "doc_id": "integer",
-    "page_id": "integer",
     "curso_id": "integer",
     "class_date": "keyword",
     "topic": "keyword",
@@ -101,6 +99,7 @@ def build_filter(
     class_date: str | None = None,
     topic: str | None = None,
     doc_id: int | None = None,
+    doc_ids: list[int] | None = None,
 ) -> dict | None:
     """Filtro Qdrant (`must`) para los campos indexados; None si no hay filtros."""
     must: list[dict[str, Any]] = []
@@ -108,6 +107,9 @@ def build_filter(
         must.append({"key": "curso_id", "match": {"value": int(curso_id)}})
     if doc_id is not None:
         must.append({"key": "doc_id", "match": {"value": int(doc_id)}})
+    if doc_ids is not None:
+        # Lista vacia = ningun documento permitido (no "sin filtro").
+        must.append({"key": "doc_id", "match": {"any": [int(i) for i in doc_ids]}})
     if class_date:
         normalized_date = normalize_class_date(class_date)
         if normalized_date:
@@ -132,7 +134,6 @@ def payload_for_chunk(
         "doc_id": int(chunk.doc_id),
         # doc_id puede superar 2^53: JS debe usar el string, no el Number.
         "doc_id_str": str(int(chunk.doc_id)),
-        "page_id": 0,
         "curso_id": int(curso_id),
         "class_date": normalize_class_date(class_date),
         "topic": topic or "",
@@ -345,15 +346,6 @@ class QdrantStore:
             sent += len(batch)
         return sent
 
-    def count(self, exact: bool = True) -> int:
-        data = self._request(
-            "POST",
-            f"/collections/{self.collection}/points/count",
-            {"exact": bool(exact)},
-        )
-        result = (data or {}).get("result") or {}
-        return int(result.get("count", 0))
-
     def search(
         self,
         vector: list[float],
@@ -435,3 +427,14 @@ class QdrantStore:
                 {"wait": "true"},
             )
         return len(clean)
+
+    def delete_by_filter(self, filters: dict) -> None:
+        """Borra todos los puntos que matchean el filtro (p. ej. un doc_id)."""
+        if not filters:
+            raise QdrantError("delete_by_filter requiere un filtro (no borra todo)")
+        self._request(
+            "POST",
+            f"/collections/{self.collection}/points/delete",
+            {"filter": filters},
+            {"wait": "true"},
+        )

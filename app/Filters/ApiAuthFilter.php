@@ -16,7 +16,7 @@ final class ApiAuthFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null): ?ResponseInterface
     {
-        if (auth()->loggedIn()) {
+        if (auth()->loggedIn() && ! auth()->user()->isBanned()) {
             return null;
         }
 

@@ -42,147 +42,6 @@ if (! function_exists('nexo_initials')) {
     }
 }
 
-if (! function_exists('nexo_workspace_type_label')) {
-    function nexo_workspace_type_label(?string $type): string
-    {
-        return match ($type) {
-            'EP-Sistemas'  => 'EP Sistemas',
-            'EP-Industrial' => 'EP Industrial',
-            'club'         => 'Club estudiantil',
-            'tesis'        => 'Tesis',
-            default        => 'Espacio',
-        };
-    }
-}
-
-if (! function_exists('nexo_workspace_type_full')) {
-    function nexo_workspace_type_full(?string $type): string
-    {
-        return match ($type) {
-            'EP-Sistemas'  => 'Escuela Profesional de Ingeniería de Sistemas',
-            'EP-Industrial' => 'Escuela Profesional de Ingeniería Industrial',
-            'club'         => 'Organización estudiantil',
-            'tesis'        => 'Proyecto de tesis',
-            default        => 'Espacio de trabajo',
-        };
-    }
-}
-
-if (! function_exists('nexo_workspace_icon')) {
-    function nexo_workspace_icon(?string $type): string
-    {
-        return match ($type) {
-            'EP-Sistemas'  => 'book-open',
-            'EP-Industrial' => 'building',
-            'club'         => 'sparkles',
-            'tesis'        => 'compass',
-            default        => 'folder',
-        };
-    }
-}
-
-if (! function_exists('nexo_workspace_tone')) {
-    function nexo_workspace_tone(?string $type): string
-    {
-        return match ($type) {
-            'EP-Sistemas'  => 'wine',
-            'EP-Industrial' => 'gold',
-            'club'         => 'sage',
-            'tesis'        => 'rose',
-            default        => 'paper',
-        };
-    }
-}
-
-if (! function_exists('nexo_role_label')) {
-    function nexo_role_label(?string $role): string
-    {
-        return match ($role) {
-            'owner'  => 'Propietario',
-            'editor' => 'Editor',
-            'viewer' => 'Lector',
-            'admin'  => 'Administrador',
-            default  => 'Miembro',
-        };
-    }
-}
-
-if (! function_exists('nexo_status_label')) {
-    function nexo_status_label(?string $status): string
-    {
-        return match ($status) {
-            'todo'  => 'Por hacer',
-            'doing' => 'En curso',
-            'done'  => 'Hecho',
-            default => 'Sin estado',
-        };
-    }
-}
-
-if (! function_exists('nexo_priority_label')) {
-    function nexo_priority_label(?string $priority): string
-    {
-        return match ($priority) {
-            'alta'  => 'Alta',
-            'media' => 'Media',
-            'baja'  => 'Baja',
-            default => 'Media',
-        };
-    }
-}
-
-if (! function_exists('nexo_date')) {
-    /**
-     * Formatea fechas de la base de datos sin fingir zonas horarias.
-     */
-    function nexo_date(?string $date, string $style = 'short'): string
-    {
-        if ($date === null || trim($date) === '') {
-            return 'Sin fecha';
-        }
-
-        try {
-            $value = new DateTimeImmutable($date, new DateTimeZone('America/Lima'));
-        } catch (Throwable) {
-            return 'Sin fecha';
-        }
-
-        $today = new DateTimeImmutable('today', new DateTimeZone('America/Lima'));
-        $day   = $value->setTime(0, 0);
-        $diff  = (int) $today->diff($day)->format('%r%a');
-
-        if ($style === 'long') {
-            $months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-
-            return $value->format('j') . ' de ' . $months[(int) $value->format('n') - 1] . ' de ' . $value->format('Y');
-        }
-
-        if ($diff === 0) {
-            return 'Hoy';
-        }
-
-        if ($diff === 1) {
-            return 'Mañana';
-        }
-
-        if ($diff === -1) {
-            return 'Ayer';
-        }
-
-        if ($diff > 1 && $diff < 7) {
-            $days = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
-
-            return $days[(int) $value->format('w')] . ' ' . $value->format('j M');
-        }
-
-        if ($value->format('Y') === $today->format('Y')) {
-            return $value->format('j M');
-        }
-
-        return $value->format('j M Y');
-    }
-}
-
 if (! function_exists('nexo_datetime')) {
     function nexo_datetime(?string $value): string
     {
@@ -241,15 +100,6 @@ if (! function_exists('nexo_bytes')) {
     }
 }
 
-if (! function_exists('nexo_cover_class')) {
-    function nexo_cover_class(?string $cover): string
-    {
-        $allowed = ['wine', 'gold', 'sage', 'ink', 'paper', 'rose', 'dark'];
-
-        return in_array($cover, $allowed, true) ? 'nx-cover--' . $cover : 'nx-cover--rose';
-    }
-}
-
 if (! function_exists('nexo_page_icon')) {
     function nexo_page_icon(?string $icon): string
     {
@@ -281,7 +131,7 @@ if (! function_exists('nexo_page_tree')) {
 
             $html .= '<a class="nx-tree__link' . ($active ? ' is-active' : '') . '"'
                 . ' style="--depth:' . $depth . '"'
-                . ' href="' . esc($base . '/pages/' . $id, 'attr') . '"'
+                . ' href="' . esc(base_url(ltrim($base . '/pages/' . $id, '/')), 'attr') . '"'
                 . ($active ? ' aria-current="page"' : '') . '>'
                 . nexo_icon($icon)
                 . '<span>' . esc($title) . '</span>'
@@ -293,80 +143,6 @@ if (! function_exists('nexo_page_tree')) {
         }
 
         return $html;
-    }
-}
-
-if (! function_exists('nexo_attachment_tone')) {
-    function nexo_attachment_tone(?string $type): string
-    {
-        $type = strtoupper((string) $type);
-
-        return match ($type) {
-            'PDF'                   => 'gold',
-            'DOC', 'DOCX'           => 'sage',
-            'XLS', 'XLSX', 'CSV'    => 'sage',
-            default                 => 'wine',
-        };
-    }
-}
-
-if (! function_exists('nexo_attachment_ext')) {
-    function nexo_attachment_ext(string $name, ?string $type = null): string
-    {
-        if ($type !== null && trim($type) !== '') {
-            return mb_strtoupper(mb_substr(trim($type), 0, 4));
-        }
-
-        $ext = pathinfo($name, PATHINFO_EXTENSION);
-
-        return $ext !== '' ? mb_strtoupper($ext) : 'FILE';
-    }
-}
-
-if (! function_exists('nexo_file_size')) {
-    function nexo_file_size(?int $bytes): string
-    {
-        return nexo_bytes($bytes);
-    }
-}
-
-if (! function_exists('nexo_url')) {
-    function nexo_url(string $prefix, string $path = ''): string
-    {
-        $path = '/' . ltrim($path, '/');
-
-        return base_url(trim($prefix, '/') . ($prefix !== '' ? $path : ltrim($path, '/')));
-    }
-}
-
-if (! function_exists('nexo_month_name')) {
-    function nexo_month_name(int $month, bool $short = false): string
-    {
-        $months = [
-            1  => ['enero', 'ene'],
-            2  => ['febrero', 'feb'],
-            3  => ['marzo', 'mar'],
-            4  => ['abril', 'abr'],
-            5  => ['mayo', 'may'],
-            6  => ['junio', 'jun'],
-            7  => ['julio', 'jul'],
-            8  => ['agosto', 'ago'],
-            9  => ['septiembre', 'sep'],
-            10 => ['octubre', 'oct'],
-            11 => ['noviembre', 'nov'],
-            12 => ['diciembre', 'dic'],
-        ];
-
-        $value = $months[$month] ?? $months[1];
-
-        return $short ? $value[1] : $value[0];
-    }
-}
-
-if (! function_exists('nexo_weekday_short')) {
-    function nexo_weekday_short(int $weekday): string
-    {
-        return ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][$weekday] ?? '';
     }
 }
 
@@ -397,12 +173,3 @@ if (! function_exists('nexo_illustration')) {
     }
 }
 
-if (! function_exists('nexo_is_active')) {
-    function nexo_is_active(string $current, string $candidate): bool
-    {
-        $current   = '/' . trim($current, '/');
-        $candidate = '/' . trim($candidate, '/');
-
-        return $current === $candidate || ($candidate !== '/' && str_starts_with($current, $candidate . '/'));
-    }
-}
