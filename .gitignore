@@ -28,3 +28,4 @@ qdrant_storage/
 /build/
 .phpunit.result.cache
 .phpunit.cache/
+ca.pem
