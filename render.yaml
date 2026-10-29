@@ -8,7 +8,7 @@ services:
     region: virginia
     branch: main
     autoDeploy: true
-    healthCheckPath: /login
+    healthCheckPath: /robots.txt # estático: no abre sesión
     envVars:
       - key: CI_ENVIRONMENT
         value: production

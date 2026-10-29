@@ -180,7 +180,11 @@ class App extends BaseConfig
      *
      * @var array<string, string>
      */
-    public array $proxyIPs = ['10.0.0.0/8' => 'X-Forwarded-For']; // balanceador de Render
+    // Render: el tráfico llega por un proxy local (127.0.0.1) y el health check desde 10.x.
+    public array $proxyIPs = [
+        '127.0.0.1'  => 'X-Forwarded-For',
+        '10.0.0.0/8' => 'X-Forwarded-For',
+    ];
 
     /**
      * --------------------------------------------------------------------------
