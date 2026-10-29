@@ -23,3 +23,15 @@ ini_set('display_errors', '0');
  | release of the framework.
  */
 defined('CI_DEBUG') || define('CI_DEBUG', false);
+
+/*
+ |--------------------------------------------------------------------------
+ | RENDER: HTTPS
+ |--------------------------------------------------------------------------
+ | Render termina TLS y su proxy local (127.0.0.1) no reenvía
+ | X-Forwarded-Proto: sin esto isSecure() es false y la cookie
+ | `secure` lanza SecurityException (500).
+ */
+if (getenv('RENDER') !== false && PHP_SAPI === 'cli-server') {
+    $_SERVER['HTTPS'] = 'on';
+}
