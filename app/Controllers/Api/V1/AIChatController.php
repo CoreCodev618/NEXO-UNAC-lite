@@ -94,7 +94,7 @@ final class AIChatController extends BaseApiController
                 $answer = (new GroqService())->chat(
                     $this->prompt($message, $context, $ragError !== null, (int) $session['id']),
                 );
-                $reply  = $answer['content'];
+                $reply  = $rag->stripUnknownCitations($answer['content'], count($citations));
                 $model  = $answer['model'];
             } catch (\Throwable $error) {
                 log_message('error', 'Groq no respondió: {error}', ['error' => $error->getMessage()]);
@@ -295,7 +295,7 @@ Reglas obligatorias:
 4. Escribe texto plano: no uses Markdown (nada de **, ##, tablas ni listas con asteriscos). Separa las ideas con saltos de línea.
 5. Si el contexto responde solo una parte, responde con lo que sí dice y aclara qué falta. Solo si no hay nada relacionado, responde exactamente: "Con la información disponible no puedo confirmar eso." y sugiere subir el material que falta.
 6. No inventes fuentes, fechas, eventos, enlaces ni nombres de archivos.
-7. La PÁGINA ACTUAL es el apunte que el estudiante está editando; puedes resumirla o explicarla sin citarla como fuente externa.
+7. El APUNTE ABIERTO es lo que el estudiante está escribiendo: puedes resumirlo o explicarlo, pero nunca le pongas número entre corchetes. Solo los fragmentos numerados del material se citan.
 PROMPT;
 
         if ($degraded) {

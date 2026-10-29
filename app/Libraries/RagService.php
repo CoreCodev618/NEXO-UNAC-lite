@@ -232,6 +232,21 @@ final class RagService
     }
 
     /**
+     * Quita citas [n] que no apuntan a una fuente devuelta: el modelo a veces
+     * numera el apunte abierto, que no es material citable.
+     */
+    public function stripUnknownCitations(string $reply, int $sources): string
+    {
+        $reply = preg_replace_callback(
+            '/[ \t]*\[(\d+)\]/',
+            static fn (array $m): string => (int) $m[1] >= 1 && (int) $m[1] <= $sources ? $m[0] : '',
+            $reply,
+        ) ?? $reply;
+
+        return trim(preg_replace('/[ \t]+([.,;:])/', '$1', $reply) ?? $reply);
+    }
+
+    /**
      * Contexto acotado para el prompt: página actual + fragmentos RAG.
      *
      * @param list<array<string, mixed>> $hits
@@ -245,7 +260,7 @@ final class RagService
         $pageText  = trim((string) ($pageContext['text'] ?? ''));
 
         if ($pageText !== '') {
-            $parts[] = "PÁGINA ACTUAL" . ($pageTitle !== '' ? ': ' . $pageTitle : '') . "\n"
+            $parts[] = "APUNTE ABIERTO (sin número, no se cita)" . ($pageTitle !== '' ? ': ' . $pageTitle : '') . "\n"
                 . mb_substr($pageText, 0, 2200);
         }
 

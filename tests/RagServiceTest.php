@@ -22,6 +22,14 @@ final class RagServiceTest extends CIUnitTestCase
         $this->assertSame('Mi PDF', $hits[0]['title']);
     }
 
+    public function testStripUnknownCitationsKeepsOnlyRealSources(): void
+    {
+        $rag = new RagService(new PythonRunner('/nonexistent/python'));
+
+        $this->assertSame('Guarda datos en tablas.', $rag->stripUnknownCitations('Guarda datos en tablas [1].', 0));
+        $this->assertSame('Ver [1] y [2].', $rag->stripUnknownCitations('Ver [1] y [2] [3].', 2));
+    }
+
     public function testRetrieveWithoutDocumentsSkipsQdrant(): void
     {
         $rag = new RagService(new PythonRunner('/nonexistent/python'));
