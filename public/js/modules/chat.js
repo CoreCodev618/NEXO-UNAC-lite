@@ -74,7 +74,7 @@ function appendUserMessage(text) {
 function appendFallback() {
   const element = appendMessage(
     'assistant',
-    'El tutor no está conectado en este entorno. No voy a inventar una respuesta ni citar fuentes que no existen.',
+    'No hay conexión con el tutor. Intenta de nuevo en unos segundos.',
   );
 
   const main = qs('.nx-msg__main', element);
@@ -118,7 +118,7 @@ function renderSources(data) {
   container.innerHTML = '<span class="nx-msg__citations-label">Fuentes del material</span>';
 
   sources.slice(0, 5).forEach((source) => {
-    const label = source.title || source.page_title || 'Página del espacio';
+    const label = source.title || source.page_title || 'Tu material';
     const detail = [source.location, source.topic].filter(Boolean).join(' · ');
     const href = source.url || (source.page_id ? appUrl(`pages/${source.page_id}`) : null);
     const element = document.createElement(href ? 'a' : 'span');
@@ -236,7 +236,7 @@ function resetConversation() {
   if (messages) messages.innerHTML = '';
   if (intro) intro.hidden = false;
   qs('[data-chat-input]', chat)?.focus();
-  toast.info('Empezamos una conversación nueva. Todavía no hay historial guardado.', 'Conversación nueva');
+  toast.info('Empezamos una conversación nueva.', 'Conversación nueva');
 }
 
 function autoGrow(textarea) {

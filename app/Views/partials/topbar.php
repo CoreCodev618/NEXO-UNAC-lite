@@ -17,7 +17,7 @@ $page = $currentPage ?? null;
             <?php if ($page !== null): ?>
                 <a href="<?= base_url('dashboard') ?>">Inicio</a>
                 <?= nexo_icon('chevron-right') ?>
-                <span class="nx-breadcrumb__current" aria-current="page"><?= esc($page['title'] ?: 'Página sin título') ?></span>
+                <span class="nx-breadcrumb__current" aria-current="page"><?= esc($page['title'] ?: 'Apunte sin título') ?></span>
             <?php else: ?>
                 <span class="nx-breadcrumb__current" aria-current="page"><?= esc($topbarTitle) ?></span>
             <?php endif ?>

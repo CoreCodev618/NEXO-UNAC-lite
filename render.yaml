@@ -14,6 +14,11 @@ services:
         value: production
       - key: cookie_secure
         value: "true"
+      # La instancia free tiene 512 MB: 2 procesos de 192 MB + Python del ingest.
+      - key: PHP_CLI_SERVER_WORKERS
+        value: "2"
+      - key: PHP_MEMORY_LIMIT
+        value: 192M
       - key: database_default_hostname
         sync: false
       - key: database_default_port

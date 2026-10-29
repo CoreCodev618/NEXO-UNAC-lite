@@ -58,7 +58,7 @@ $firstName = explode(' ', trim((string) $user['name']))[0] ?: 'estudiante';
             </div>
         <?php else: ?>
             <div class="nx-empty">
-                <p class="nx-empty__text">Todavía no tienes apuntes. El tutor también los usa para responderte.</p>
+                <p class="nx-empty__text">Todavía no tienes apuntes. Mientras escribes uno, el tutor puede resumirlo o explicártelo.</p>
                 <a class="nx-btn nx-btn--secondary" href="<?= base_url('pages/nueva') ?>">
                     <?= nexo_icon('plus') ?> Crear mi primer apunte
                 </a>

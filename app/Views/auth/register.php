@@ -7,6 +7,7 @@
 $config    = config('Auth');
 $errors    = session('errors');
 $error     = session('error');
+$domains   = \App\Libraries\InstitucionalValidator::domains();
 ?>
 <div class="nx-auth__form-wrap">
     <div class="nx-auth__form-head">
@@ -48,30 +49,11 @@ $error     = session('error');
                 name="name"
                 type="text"
                 autocomplete="name"
-                placeholder="Sebastián Rabanal"
+                placeholder="Nombre y apellido"
                 value="<?= esc(old('name') ?? '') ?>"
                 maxlength="150"
                 required
                 autofocus
-            >
-        </div>
-
-        <div class="nx-field">
-            <label class="nx-label" for="username">
-                Nombre de usuario
-                <span class="nx-label__hint">Así te verá tu equipo</span>
-            </label>
-            <input
-                class="nx-input nx-input--lg"
-                id="username"
-                name="username"
-                type="text"
-                autocomplete="username"
-                placeholder="sebastian.rabanal"
-                value="<?= esc(old('username') ?? '') ?>"
-                minlength="3"
-                maxlength="30"
-                required
             >
         </div>
 
@@ -84,11 +66,11 @@ $error     = session('error');
                 type="email"
                 inputmode="email"
                 autocomplete="email"
-                placeholder="nombre@unac.edu.pe"
+                placeholder="nombre@<?= esc($domains[0] ?? '', 'attr') ?>"
                 value="<?= esc(old('email') ?? '') ?>"
                 required
             >
-            <span class="nx-hint">Debes registrarte con tu correo @unac.edu.pe.</span>
+            <span class="nx-hint">Debes registrarte con tu correo @<?= esc(implode(' o @', $domains)) ?>.</span>
         </div>
 
         <div class="nx-field">
@@ -128,11 +110,6 @@ $error     = session('error');
                 placeholder="Repite la contraseña"
                 required
             >
-        </div>
-
-        <div class="nx-auth__note">
-            <?= nexo_icon('info') ?>
-            <span>Tu cuenta empieza como estudiante. Un docente o administrador puede darte acceso a un espacio después.</span>
         </div>
 
         <button class="nx-btn nx-btn--primary nx-auth__submit" type="submit">

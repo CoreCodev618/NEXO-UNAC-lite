@@ -17,7 +17,7 @@ $secondary  = $errorSecondaryMode ?? null;
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="oklch(38% 0.12 15)">
+    <meta name="theme-color" content="#5c1f2b">
     <meta name="robots" content="noindex">
     <title><?= esc($errorTitle) ?> · NEXO UNAC</title>
     <link rel="icon" href="<?= base_url('favicon.svg') ?>" type="image/svg+xml">
@@ -57,9 +57,6 @@ $secondary  = $errorSecondaryMode ?? null;
             <?php endif ?>
         </div>
 
-        <p class="nx-hint" style="margin-top: var(--space-8);">
-            Si el problema continúa, escribe a <a href="mailto:soporte@unac.edu.pe">soporte@unac.edu.pe</a>.
-        </p>
     </main>
 
     <script>

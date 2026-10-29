@@ -88,11 +88,11 @@ abstract class BaseApiController extends Controller
             ->getRowArray();
 
         if ($member === null) {
-            return $this->error('No tienes acceso a este espacio.', 403);
+            return $this->error('No tienes acceso a este apunte.', 403);
         }
 
         if ($write && $member['role'] === 'viewer') {
-            return $this->error('Tu rol en este espacio es de solo lectura.', 403);
+            return $this->error('No puedes editar este apunte.', 403);
         }
 
         return null;

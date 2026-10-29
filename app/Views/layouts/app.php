@@ -14,7 +14,7 @@ $pageId   = $isDoc ? (int) $currentPage['id'] : null;
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="oklch(38% 0.12 15)">
+    <meta name="theme-color" content="#5c1f2b">
     <meta name="csrf-token" content="<?= esc(csrf_hash(), 'attr') ?>">
     <meta name="csrf-header" content="<?= esc(csrf_header(), 'attr') ?>">
 

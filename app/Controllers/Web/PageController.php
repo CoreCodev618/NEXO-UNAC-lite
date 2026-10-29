@@ -13,7 +13,7 @@ class PageController extends BaseWebController
         $page = $this->repository()->page((int) $id, (int) auth()->id());
 
         if ($page === null) {
-            throw PageNotFoundException::forPageNotFound('No encontramos esa página.');
+            throw PageNotFoundException::forPageNotFound('No encontramos ese apunte.');
         }
 
         return $this->renderPage($page, $page['title']);
@@ -24,7 +24,7 @@ class PageController extends BaseWebController
         $userId    = (int) auth()->id();
         $workspace = $this->repository()->ensurePersonalWorkspace($userId);
 
-        return $this->renderPage($this->repository()->newPage((int) $workspace['id'], $userId), 'Página nueva');
+        return $this->renderPage($this->repository()->newPage((int) $workspace['id'], $userId), 'Apunte nuevo');
     }
 
     private function renderPage(array $page, string $title): string

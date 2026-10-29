@@ -49,7 +49,7 @@ $error     = session('error');
                 type="email"
                 inputmode="email"
                 autocomplete="email"
-                placeholder="nombre@unac.edu.pe"
+                placeholder="nombre@<?= esc(\App\Libraries\InstitucionalValidator::domains()[0] ?? '', 'attr') ?>"
                 value="<?= esc(old('email') ?? '') ?>"
                 required
                 autofocus
@@ -79,9 +79,8 @@ $error     = session('error');
         <div class="nx-auth__row">
             <label class="nx-check">
                 <input type="checkbox" name="remember" value="1" <?= old('remember') ? 'checked' : '' ?>>
-                <span>Recordarme en este equipo</span>
+                <span>Recordarme en este dispositivo</span>
             </label>
-            <span class="nx-muted-2" style="font-size: 14px;">Sesión segura</span>
         </div>
 
         <button class="nx-btn nx-btn--primary nx-auth__submit" type="submit">

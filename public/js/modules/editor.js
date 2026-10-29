@@ -51,7 +51,7 @@ function menu(id) {
       <button class="nx-icon-btn" type="button" data-menu-trigger="block-menu-${escapeHtml(id)}" aria-expanded="false" aria-label="Opciones del bloque">${icon('more-horizontal')}</button>
       <div class="nx-menu nx-block__menu" id="block-menu-${escapeHtml(id)}" hidden>
         <div class="nx-menu__label">Bloque</div>
-        <button class="nx-menu__item" type="button" data-block-action="duplicate">${icon('copy')}<span>Duplicar</span><span class="nx-menu__shortcut">⌘ D</span></button>
+        <button class="nx-menu__item" type="button" data-block-action="duplicate">${icon('copy')}<span>Duplicar</span></button>
         <button class="nx-menu__item" type="button" data-block-action="up">${icon('arrow-up')}<span>Mover arriba</span></button>
         <button class="nx-menu__item" type="button" data-block-action="down">${icon('arrow-down')}<span>Mover abajo</span></button>
         <div class="nx-menu__separator"></div>
@@ -254,7 +254,7 @@ function saveState(state, label) {
 }
 
 function updatePageChrome(title) {
-  const safeTitle = title || 'Página sin título';
+  const safeTitle = title || 'Apunte sin título';
   document.title = `${safeTitle} · NEXO UNAC`;
   document.body.dataset.pageTitle = safeTitle;
   const current = qs('.nx-breadcrumb__current');
@@ -282,7 +282,7 @@ function addToSidebar(id, title) {
   link.style.setProperty('--depth', '0');
   link.href = appUrl(`pages/${id}`);
   link.setAttribute('aria-current', 'page');
-  link.innerHTML = `${icon('file-text')}<span>${escapeHtml(title || 'Página sin título')}</span>`;
+  link.innerHTML = `${icon('file-text')}<span>${escapeHtml(title || 'Apunte sin título')}</span>`;
   tree.appendChild(link);
 }
 
@@ -314,7 +314,7 @@ async function persist() {
   saveState('saving', 'Guardando…');
 
   const { title, blocks } = collect();
-  const finalTitle = title || 'Página sin título';
+  const finalTitle = title || 'Apunte sin título';
   updatePageChrome(finalTitle);
 
   const sentDeletedIds = deletedIds;
@@ -355,11 +355,11 @@ async function persist() {
       lastErrorToast = Date.now();
       if (error instanceof ApiError && error.unavailable) {
         toast.warning(
-          'El endpoint de páginas y bloques todavía no está disponible. El documento no se guardó en el servidor.',
+          'No hay conexión. Tus cambios no se guardaron.',
           'Guardado pendiente',
         );
       } else {
-        toast.error(error.message || 'No se pudo guardar la página.');
+        toast.error(error.message || 'No se pudo guardar el apunte.');
       }
     }
   } finally {

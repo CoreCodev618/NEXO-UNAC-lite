@@ -4,7 +4,7 @@
  */
 $errorCode = 'Error 400 · solicitud no válida';
 $errorTitle = 'No pudimos leer esta solicitud.';
-$errorText = 'El enlace puede estar incompleto o la dirección incluye un dato que no reconocemos. Revisa la dirección o vuelve a empezar desde tu mesa.';
+$errorText = 'El enlace puede estar incompleto o la dirección incluye un dato que no reconocemos. Revisa la dirección o vuelve a empezar desde el inicio.';
 $errorArt = 'file';
 $errorSecondaryMode = 'back';
 $errorSecondaryLabel = 'Volver a la página anterior';

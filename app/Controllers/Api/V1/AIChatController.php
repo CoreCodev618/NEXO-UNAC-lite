@@ -87,8 +87,8 @@ final class AIChatController extends BaseApiController
 
         if ($context === '') {
             $reply = $ragError !== null
-                ? 'No pude consultar el material en este momento. Revisa que Qdrant y las claves del RAG estén activas, o vuelve a intentar en unos segundos.'
-                : 'No encontré material indexado para responder eso. Sube el PDF, DOCX o PPTX de la clase en «Material para el tutor» y vuelve a preguntar.';
+                ? 'El tutor no está disponible en este momento. Vuelve a intentar en unos segundos.'
+                : 'No encontré nada en tu material para responder eso. Sube el archivo de la clase (PDF, DOCX, PPTX, imagen o ZIP) en «Sube tu material» y vuelve a preguntar.';
         } else {
             try {
                 $answer = (new GroqService())->chat(
@@ -186,7 +186,7 @@ final class AIChatController extends BaseApiController
                     ->countAllResults();
 
                 if ($member === 0) {
-                    throw new RuntimeException('No tienes acceso al contexto de esta página.');
+                    throw new RuntimeException('No tienes acceso a este apunte.');
                 }
 
                 $blocks = $db->table('blocks')
@@ -286,7 +286,7 @@ final class AIChatController extends BaseApiController
     private function prompt(string $message, string $context, bool $degraded, int $sessionId): array
     {
         $system = <<<'PROMPT'
-Eres el Tutor NEXO de la Universidad Nacional del Callao. Ayudas a estudiantes de FIIS a estudiar con el material de sus cursos.
+Eres el Tutor NEXO de la Universidad Nacional del Callao. Ayudas a estudiantes a estudiar con el material de sus cursos.
 
 Reglas obligatorias:
 1. Responde en español, claro y breve (máximo 180 palabras).

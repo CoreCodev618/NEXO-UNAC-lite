@@ -122,8 +122,7 @@ final class DocumentController extends BaseApiController
                     ->getRowArray();
 
                 if ($page === null) {
-                    // En la demo de A todavía puede no existir la página de B:
-                    // se indexa igual, sin asociación, en vez de romper el FK.
+                    // Apunte borrado o inexistente: se indexa sin asociación en vez de romper el FK.
                     $pageId = null;
                 } else {
                     $this->assertPageAccess($pageId, (int) $user->id, true);
@@ -338,7 +337,7 @@ final class DocumentController extends BaseApiController
             ->getRowArray();
 
         if ($page === null) {
-            throw new \RuntimeException('La página no existe.');
+            throw new \RuntimeException('El apunte no existe.');
         }
 
         $member = $db->table('workspace_members')
@@ -349,11 +348,11 @@ final class DocumentController extends BaseApiController
             ->getRowArray();
 
         if ($member === null) {
-            throw new \RuntimeException('No tienes acceso a esta página.');
+            throw new \RuntimeException('No tienes acceso a este apunte.');
         }
 
         if ($write && ($member['role'] ?? '') === 'viewer') {
-            throw new \RuntimeException('Tu rol en este espacio es de solo lectura.');
+            throw new \RuntimeException('No puedes editar este apunte.');
         }
     }
 

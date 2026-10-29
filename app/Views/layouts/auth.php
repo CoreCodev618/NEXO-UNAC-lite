@@ -1,8 +1,6 @@
 <?php
 /**
  * Layout de autenticación.
- *
- * @var string $prefix
  */
 $authHome = base_url();
 ?>
@@ -11,7 +9,7 @@ $authHome = base_url();
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="oklch(38% 0.12 15)">
+    <meta name="theme-color" content="#5c1f2b">
     <meta name="description" content="Entra a NEXO UNAC: tus apuntes y tu material de clase con un tutor.">
     <meta name="csrf-token" content="<?= esc(csrf_hash(), 'attr') ?>">
     <meta name="csrf-header" content="<?= esc(csrf_header(), 'attr') ?>">
@@ -31,7 +29,6 @@ $authHome = base_url();
     class="nx-auth-body"
     data-base="<?= esc(base_url(), 'attr') ?>"
     data-api="<?= esc(rtrim(base_url('api/v1'), '/'), 'attr') ?>"
-    data-prefix="<?= esc($prefix ?? '', 'attr') ?>"
 >
     <a class="nx-skip" href="#nx-auth-main">Saltar al formulario</a>
 

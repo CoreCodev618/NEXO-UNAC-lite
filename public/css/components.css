@@ -978,13 +978,6 @@
   background: var(--danger-soft);
 }
 
-.nx-menu__shortcut {
-  margin-left: auto;
-  color: var(--muted-2);
-  font-family: var(--font-mono);
-  font-size: 14px;
-}
-
 .nx-menu__separator {
   height: 1px;
   margin: var(--space-1) 0;

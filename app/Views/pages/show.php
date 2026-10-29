@@ -15,7 +15,7 @@ $renderBlockMenu = static function (int|string $id): string {
         . '<button class="nx-icon-btn" type="button" data-menu-trigger="block-menu-' . esc((string) $id, 'attr') . '" aria-expanded="false" aria-label="Opciones del bloque">' . nexo_icon('more-horizontal') . '</button>'
         . '<div class="nx-menu nx-block__menu" id="block-menu-' . esc((string) $id, 'attr') . '" hidden>'
         . '<div class="nx-menu__label">Bloque</div>'
-        . '<button class="nx-menu__item" type="button" data-block-action="duplicate">' . nexo_icon('copy') . '<span>Duplicar</span><span class="nx-menu__shortcut">⌘ D</span></button>'
+        . '<button class="nx-menu__item" type="button" data-block-action="duplicate">' . nexo_icon('copy') . '<span>Duplicar</span></button>'
         . '<button class="nx-menu__item" type="button" data-block-action="up">' . nexo_icon('arrow-up') . '<span>Mover arriba</span></button>'
         . '<button class="nx-menu__item" type="button" data-block-action="down">' . nexo_icon('arrow-down') . '<span>Mover abajo</span></button>'
         . '<div class="nx-menu__separator"></div>'

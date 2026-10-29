@@ -5,7 +5,7 @@
  * @var array|null $currentPage
  */
 $page      = $currentPage ?? null;
-$pageTitle = $page !== null ? ($page['title'] ?: 'Página sin título') : null;
+$pageTitle = $page !== null ? ($page['title'] ?: 'Apunte sin título') : null;
 $suggestions = $pageTitle !== null
     ? [
         ['icon' => 'file-text', 'text' => 'Resume este apunte en cinco puntos'],

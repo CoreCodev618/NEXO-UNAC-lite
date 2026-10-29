@@ -10,12 +10,20 @@ namespace App\Libraries;
  */
 class InstitucionalValidator
 {
-    public function institutional_email(?string $str, ?string &$error = null): bool
+    /**
+     * @return list<string>
+     */
+    public static function domains(): array
     {
-        $domains = array_filter(array_map(
+        return array_values(array_filter(array_map(
             static fn (string $d): string => strtolower(trim($d)),
             explode(',', (string) env('ALLOWED_EMAIL_DOMAINS', 'unac.edu.pe')),
-        ));
+        )));
+    }
+
+    public function institutional_email(?string $str, ?string &$error = null): bool
+    {
+        $domains = self::domains();
 
         $domain = strtolower(substr((string) strrchr((string) $str, '@'), 1));
 

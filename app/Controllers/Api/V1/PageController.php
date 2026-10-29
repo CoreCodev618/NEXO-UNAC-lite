@@ -29,7 +29,7 @@ final class PageController extends BaseApiController
         }
 
         $title = trim((string) ($data['title'] ?? ''));
-        $title = $title !== '' ? mb_substr($title, 0, 255) : 'Página sin título';
+        $title = $title !== '' ? mb_substr($title, 0, 255) : 'Apunte sin título';
 
         $parentId = isset($data['parent_id']) && $data['parent_id'] !== null
             ? (int) $data['parent_id']
@@ -38,7 +38,7 @@ final class PageController extends BaseApiController
         if ($parentId !== null) {
             $parent = $this->pages->find($parentId);
             if ($parent === null || (int) $parent['workspace_id'] !== $workspaceId) {
-                return $this->error('La página padre no pertenece al espacio.', 422);
+                return $this->error('Ese apunte no se puede usar como padre.', 422);
             }
         }
 
@@ -81,7 +81,7 @@ final class PageController extends BaseApiController
 
         $data  = $this->payload();
         $title = trim((string) ($data['title'] ?? $page['title']));
-        $title = $title !== '' ? mb_substr($title, 0, 255) : 'Página sin título';
+        $title = $title !== '' ? mb_substr($title, 0, 255) : 'Apunte sin título';
 
         $incoming = $data['blocks'] ?? [];
         if (! is_array($incoming)) {

@@ -3,6 +3,7 @@
 namespace Config;
 
 use CodeIgniter\Config\BaseConfig;
+use CodeIgniter\Log\Handlers\ErrorlogHandler;
 use CodeIgniter\Log\Handlers\FileHandler;
 use CodeIgniter\Log\Handlers\HandlerInterface;
 
@@ -148,4 +149,19 @@ class Logger extends BaseConfig
         //     'messageType' => 0,
         // ],
     ];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Render borra el disco y solo muestra stdout/stderr: en producción, error_log().
+        if (ENVIRONMENT === 'production') {
+            $this->handlers = [
+                ErrorlogHandler::class => [
+                    'handles'     => $this->handlers[FileHandler::class]['handles'],
+                    'messageType' => ErrorlogHandler::TYPE_OS,
+                ],
+            ];
+        }
+    }
 }
