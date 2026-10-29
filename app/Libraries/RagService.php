@@ -38,10 +38,11 @@ final class RagService
      * Fragmentos más parecidos a $query, solo de los documentos de $documents.
      *
      * @param array<int, string> $documents doc_id => título (ver documentsFor())
+     * @param float|null          $minScore  null = RAG_MIN_SCORE; 0 = sin umbral
      *
      * @return list<array<string, mixed>>
      */
-    public function retrieve(string $query, array $documents, ?int $topK = null): array
+    public function retrieve(string $query, array $documents, ?int $topK = null, ?float $minScore = null): array
     {
         $query = trim($query);
         if ($query === '') {
@@ -61,9 +62,10 @@ final class RagService
             implode(',', array_keys($documents)),
         ];
 
-        if ($this->minScore > 0) {
+        $minScore ??= $this->minScore;
+        if ($minScore > 0) {
             $args[] = '--min-score';
-            $args[] = (string) $this->minScore;
+            $args[] = (string) $minScore;
         }
 
         // `--` evita que una consulta que empiece con "-" se lea como opción.

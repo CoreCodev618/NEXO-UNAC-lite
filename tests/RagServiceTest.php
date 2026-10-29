@@ -30,6 +30,16 @@ final class RagServiceTest extends CIUnitTestCase
         $this->assertSame('Ver [1] y [2].', $rag->stripUnknownCitations('Ver [1] y [2] [3].', 2));
     }
 
+    public function testRetrieveWithZeroMinScoreSkipsThreshold(): void
+    {
+        putenv('RAG_MIN_SCORE=0.67');
+        $rag = new RagService(new PythonRunner('tests/_support/fake_retrieve_args.sh'));
+        putenv('RAG_MIN_SCORE');
+
+        $this->assertStringContainsString('--min-score 0.67', $rag->retrieve('q', [1 => 'PDF'])[0]['text']);
+        $this->assertStringNotContainsString('--min-score', $rag->retrieve('q', [1 => 'PDF'], null, 0.0)[0]['text']);
+    }
+
     public function testRetrieveWithoutDocumentsSkipsQdrant(): void
     {
         $rag = new RagService(new PythonRunner('/nonexistent/python'));

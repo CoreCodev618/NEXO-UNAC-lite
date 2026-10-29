@@ -75,7 +75,14 @@ final class AIChatController extends BaseApiController
         $ragError  = null;
 
         try {
-            $hits = $rag->retrieve($message, $rag->documentsFor($userId));
+            $documents = $rag->documentsFor($userId);
+            $hits      = $rag->retrieve($message, $documents);
+
+            // Preguntas generales ("¿de qué trata el archivo?") no pasan el umbral:
+            // se usan los fragmentos más cercanos de su propio material.
+            if ($hits === [] && $documents !== []) {
+                $hits = $rag->retrieve($message, $documents, null, 0.0);
+            }
         } catch (\Throwable $error) {
             $ragError = $error->getMessage();
             log_message('warning', 'RAG retrieval falló: {error}', ['error' => $ragError]);
