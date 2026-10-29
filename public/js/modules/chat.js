@@ -84,6 +84,14 @@ function appendError(message) {
   );
 }
 
+// Lo que el tutor va haciendo, para que se note que no se trabó.
+const THINKING_STEPS = [
+  [0, 'Buscando en tu material…'],
+  [3, 'Leyendo los fragmentos que encontré…'],
+  [7, 'Escribiendo la respuesta…'],
+  [20, 'Sigo escribiendo, es una respuesta larga…'],
+];
+
 function appendTyping() {
   const messages = qs('[data-chat-messages]', chat);
   if (!messages) return null;
@@ -93,11 +101,25 @@ function appendTyping() {
   wrapper.innerHTML = `
     <span class="nx-msg__avatar nx-chat__head-icon" aria-hidden="true">${icon('sparkles')}</span>
     <div class="nx-msg__main">
-      <div class="nx-msg__bubble"><span class="nx-typing" aria-label="Esperando respuesta"><span></span><span></span><span></span></span></div>
+      <div class="nx-msg__bubble nx-thinking">
+        <span class="nx-typing" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="nx-thinking__text" role="status" data-thinking-text>${THINKING_STEPS[0][1]}</span>
+        <span class="nx-thinking__time" data-thinking-time>0 s</span>
+      </div>
     </div>
   `;
   messages.appendChild(wrapper);
   scrollToEnd();
+
+  const started = Date.now();
+  const timer = window.setInterval(() => {
+    if (!wrapper.isConnected) return window.clearInterval(timer);
+    const seconds = Math.round((Date.now() - started) / 1000);
+    const step = THINKING_STEPS.filter(([at]) => seconds >= at).pop();
+    qs('[data-thinking-text]', wrapper).textContent = step[1];
+    qs('[data-thinking-time]', wrapper).textContent = `${seconds} s`;
+  }, 1000);
+
   return wrapper;
 }
 
@@ -147,9 +169,11 @@ async function send(message) {
 
   try {
     const pageId = Number(chat.dataset.pageId || 0);
+    const docId = Number(chat.dataset.docId || 0);
     const response = await api.chat.send({
       message: text,
       page_id: pageId > 0 ? pageId : null,
+      document_id: docId > 0 ? docId : null,
       session_id: sessionId,
     });
 
@@ -175,7 +199,7 @@ async function send(message) {
     if (saveButton && (sourceList.length > 0 || pageId > 0)) {
       saveButton.hidden = false;
       saveButton.dataset.question = text;
-      saveButton.dataset.documentId = String(sourceList[0]?.doc_id || '');
+      saveButton.dataset.documentId = String(sourceList[0]?.doc_id || docId || '');
     }
     if (response?.degraded) {
       const note = document.createElement('div');

@@ -38,6 +38,7 @@ final class AIChatController extends BaseApiController
         $userId    = (int) $user->id;
         $pageId    = $this->positiveInt($payload['page_id'] ?? null);
         $sessionId = $this->positiveInt($payload['session_id'] ?? null);
+        $docId     = $this->positiveInt($payload['document_id'] ?? null);
 
         try {
             $pageContext = $pageId !== null ? $this->pageContext($pageId, $userId) : null;
@@ -63,7 +64,7 @@ final class AIChatController extends BaseApiController
         } catch (\Throwable $error) {
             log_message('error', 'No se pudo crear la sesión de chat: {error}', ['error' => $error->getMessage()]);
 
-            return $this->error('No se pudo iniciar la conversación. Revisa la base de datos.', 500);
+            return $this->error('No se pudo iniciar la conversación. Intenta de nuevo.', 500);
         }
 
         // Retrieval + Groq pueden tardar decenas de segundos: soltar el lock de la
@@ -76,7 +77,13 @@ final class AIChatController extends BaseApiController
 
         try {
             $documents = $rag->documentsFor($userId);
-            $hits      = $rag->retrieve($message, $documents);
+
+            // «Preguntar al tutor» desde un archivo: solo ese archivo (si es del usuario).
+            if ($docId !== null && isset($documents[$docId])) {
+                $documents = [$docId => $documents[$docId]];
+            }
+
+            $hits = $rag->retrieve($message, $documents);
 
             // Preguntas generales ("¿de qué trata el archivo?") no pasan el umbral:
             // se usan los fragmentos más cercanos de su propio material.

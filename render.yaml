@@ -44,7 +44,7 @@ services:
       - key: ALLOWED_EMAIL_DOMAINS
         value: unac.edu.pe
       - key: GEMINI_OCR_MODEL
-        value: gemini-3.8-flash
+        value: gemini-3.6-flash
       - key: EMBED_MODEL
         value: gemini-embedding-001
       - key: EMBED_DIM

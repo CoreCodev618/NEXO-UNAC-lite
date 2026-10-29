@@ -30,5 +30,7 @@ $routes->group('api/v1', [
     $routes->post('notes', 'NoteController::create');
     $routes->get('documents', 'DocumentController::index');
     $routes->post('documents', 'DocumentController::create');
+    $routes->post('documents/(:num)/ingest', 'DocumentController::ingest/$1');
+    $routes->post('documents/(:num)/summary', 'DocumentController::summary/$1');
     $routes->delete('documents/(:num)', 'DocumentController::delete/$1');
 });

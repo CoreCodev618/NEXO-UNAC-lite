@@ -15,7 +15,10 @@ use Throwable;
  * GET  /api/v1/documents       lista el material indexado
  * POST /api/v1/documents       multipart: file, title, topic, class_date, curso_id, page_id
  *
- * El archivo se guarda en writable/uploads/rag y se indexa en el momento con
+ * POST /api/v1/documents/{id}/ingest   lee e indexa (reintentable)
+ * POST /api/v1/documents/{id}/summary  el tutor escribe el apunte resumen
+ *
+ * El archivo se guarda en writable/uploads/rag y se indexa aparte con
  * `python/ingest.py --doc-id`. Si el ingest falla, el documento queda en
  * MariaDB con `error_message` para poder reintentar/depurar.
  */
@@ -34,6 +37,11 @@ final class DocumentController extends BaseApiController
 
     private const MAX_UPLOADS_PER_MINUTE = 5;
 
+    /** El resumen del tutor es el apunte «Resumen: …» ligado al documento. */
+    private const COLUMNS = 'id, page_id, title, file_path, source_key, mime_type, size_bytes, curso_id, class_date, topic,'
+        . ' indexed_v2, indexed_at, error_message, created_at, created_by,'
+        . " (SELECT MIN(p.id) FROM pages p WHERE p.document_id = documents.id AND p.deleted_at IS NULL AND p.title LIKE 'Resumen:%') AS summary_page_id";
+
     public function index(): ResponseInterface
     {
         $pageId = $this->positiveInt($this->request->getGet('page_id'));
@@ -48,7 +56,7 @@ final class DocumentController extends BaseApiController
 
         $builder = \Config\Database::connect()
             ->table('documents')
-            ->select('id, page_id, title, file_path, source_key, mime_type, size_bytes, curso_id, class_date, topic, indexed_v2, indexed_at, error_message, created_at')
+            ->select(self::COLUMNS, false)
             ->where('created_by', (int) auth()->id())
             ->orderBy('id', 'DESC')
             ->limit(50);
@@ -198,18 +206,45 @@ final class DocumentController extends BaseApiController
             return $this->error('No se pudo registrar el documento en la base de datos.', 500);
         }
 
-        // El ingest tarda: soltar el lock de la sesión (FileHandler) para no
-        // bloquear el autosave del editor y no abortar a medias si cierran la pestaña.
+        // Se indexa en otra petición (POST documents/{id}/ingest): así la UI sabe
+        // el id para mostrar el progreso y poder cancelar.
+        $row = $this->find($docId);
+
+        return $this->ok($row !== null ? $this->formatDocument($row) : ['id' => $docId], 201);
+    }
+
+    /**
+     * Lee el archivo (texto u OCR), lo trocea y lo sube a Qdrant. Reintentable.
+     */
+    public function ingest(string $id): ResponseInterface
+    {
+        $row = $this->owned((int) $id);
+
+        if ($row === null) {
+            return $this->error('Ese material ya no existe.', 404);
+        }
+
+        $docId = (int) $row['id'];
+        $db    = \Config\Database::connect();
+
+        // El ingest tarda: soltar el lock de la sesión para no bloquear el resto
+        // de la app. Si cancelan, la UI borra el documento (delete()).
         session_write_close();
-        ignore_user_abort(true);
         @set_time_limit(240);
 
         try {
-            $result = (new RagService())->ingest($docId, $relative, [
-                'curso_id'   => $cursoId,
-                'class_date' => $date,
-                'topic'      => $topic,
+            $result = (new RagService())->ingest($docId, (string) $row['file_path'], [
+                'curso_id'   => (int) ($row['curso_id'] ?? 1),
+                'class_date' => (string) ($row['class_date'] ?? ''),
+                'topic'      => (string) ($row['topic'] ?? ''),
             ]);
+
+            // Cancelado mientras se leía: la UI ya borró el documento; quitar lo subido a Qdrant.
+            if ($this->find($docId) === null) {
+                (new RagService())->delete($docId);
+
+                return $this->error('La subida se canceló.', 410);
+            }
 
             $db->table('documents')->where('id', $docId)->update([
                 'indexed_v2'    => true,
@@ -217,29 +252,12 @@ final class DocumentController extends BaseApiController
                 'error_message' => null,
             ]);
 
-            // El resumen es un extra: si Groq falla, el archivo igual queda listo.
-            $noteId = null;
-            try {
-                $noteId = (new TutorNotes())->fromDocument((int) $user->id, $docId, $title);
-            } catch (Throwable $error) {
-                log_message('warning', 'No se pudo crear el apunte del documento {id}: {error}', [
-                    'id'    => $docId,
-                    'error' => $error->getMessage(),
-                ]);
-            }
-
-            $row = $this->find($docId);
-
-            return $this->ok(
-                ($row !== null ? $this->formatDocument($row) : ['id' => $docId])
-                    + ['chunks' => $result['chunks'], 'note_id' => $noteId],
-                201,
-            );
+            return $this->ok($this->formatDocument($this->find($docId) ?? $row) + ['chunks' => $result['chunks']]);
         } catch (Throwable $error) {
             // RagService ya devuelve un mensaje sin stderr; otros errores no se exponen.
             $message = $error instanceof \RuntimeException
                 ? mb_substr($error->getMessage(), 0, 300)
-                : 'No se pudo indexar el documento.';
+                : 'No se pudo leer el archivo.';
 
             $db->table('documents')->where('id', $docId)->update([
                 'indexed_v2'    => false,
@@ -259,14 +277,39 @@ final class DocumentController extends BaseApiController
                 // Qdrant caído: el reintento del usuario o el borrado los limpiará.
             }
 
-            $row = $this->find($docId);
-
-            return $this->error(
-                'El archivo se guardó, pero no se pudo indexar: ' . $message,
-                422,
-                ['document' => $row !== null ? $this->formatDocument($row) : ['id' => $docId]],
-            );
+            return $this->error($message, 422, ['document' => $this->formatDocument($this->find($docId) ?? $row)]);
         }
+    }
+
+    /**
+     * El tutor escribe el apunte «Resumen: <archivo>» (o devuelve el que ya existe).
+     */
+    public function summary(string $id): ResponseInterface
+    {
+        $row = $this->owned((int) $id);
+
+        if ($row === null || ! (bool) $row['indexed_v2']) {
+            return $this->error('Ese material todavía no está listo.', 422);
+        }
+
+        $noteId = $row['summary_page_id'] !== null ? (int) $row['summary_page_id'] : null;
+
+        if ($noteId === null) {
+            session_write_close();
+
+            try {
+                $noteId = (new TutorNotes())->fromDocument((int) auth()->id(), (int) $row['id'], (string) $row['title']);
+            } catch (Throwable $error) {
+                log_message('error', 'No se pudo crear el resumen del documento {id}: {error}', [
+                    'id'    => $row['id'],
+                    'error' => $error->getMessage(),
+                ]);
+
+                return $this->error('El tutor no pudo escribir el resumen ahora. Intenta de nuevo en unos segundos.', 503);
+            }
+        }
+
+        return $this->ok(['id' => $noteId, 'url' => base_url('pages/' . $noteId)], 201);
     }
 
     public function delete(string $id): ResponseInterface
@@ -304,10 +347,20 @@ final class DocumentController extends BaseApiController
     {
         return \Config\Database::connect()
             ->table('documents')
-            ->select('id, page_id, title, file_path, source_key, mime_type, size_bytes, curso_id, class_date, topic, indexed_v2, indexed_at, error_message, created_at')
+            ->select(self::COLUMNS, false)
             ->where('id', $docId)
             ->get()
             ->getRowArray();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function owned(int $docId): ?array
+    {
+        $row = $this->find($docId);
+
+        return $row !== null && (int) $row['created_by'] === (int) auth()->id() ? $row : null;
     }
 
     /**
@@ -337,6 +390,7 @@ final class DocumentController extends BaseApiController
             'indexed_at'  => $row['indexed_at'] ?? null,
             'error'       => $error !== '' ? $error : null,
             'created_at'  => $row['created_at'] ?? null,
+            'summary_id'  => isset($row['summary_page_id']) ? (int) $row['summary_page_id'] : null,
         ];
     }
 

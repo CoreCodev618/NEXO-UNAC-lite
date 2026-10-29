@@ -22,8 +22,9 @@ import requests
 from . import env
 
 _API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-DEFAULT_MODEL = "gemini-3.8-flash"
-FALLBACK_MODELS = ("gemini-3.7-flash", "gemini-3.6-flash")
+# 3.8/3.7-flash tardaban >60 s por imagen; 3.6-flash sin "thinking" responde en ~3 s.
+DEFAULT_MODEL = "gemini-3.6-flash"
+FALLBACK_MODELS = ("gemini-3.7-flash", "gemini-3.8-flash")
 MAX_ATTEMPTS = 2
 RETRY_STATUS = {429, 500, 502, 503, 504}
 CACHE_VERSION = 1
@@ -109,7 +110,8 @@ def ocr_image(path: Path, model: str | None = None) -> str:
                 ]
             }
         ],
-        "generationConfig": {"temperature": 0.0},
+        # Transcribir no necesita razonamiento: thinking apagado = ~7x más rápido.
+        "generationConfig": {"temperature": 0.0, "thinkingConfig": {"thinkingBudget": 0}},
     }
 
     errors: list[str] = []
@@ -120,9 +122,9 @@ def ocr_image(path: Path, model: str | None = None) -> str:
                     _API.format(model=candidate),
                     json=payload,
                     headers={"x-goog-api-key": key},
-                    # 3 modelos x 45s caben en RAG_TIMEOUT (180s); un modelo lento
+                    # 3 modelos x 30s caben en RAG_TIMEOUT (180s); un modelo lento
                     # cede el turno al siguiente en vez de agotar todo el ingest.
-                    timeout=45,
+                    timeout=30,
                 )
             except requests.RequestException as exc:
                 # No incluir exc: su texto puede contener la URL de la peticion.

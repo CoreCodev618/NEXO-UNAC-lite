@@ -20,6 +20,8 @@ $maxMb = max(1, min(100, (int) env('RAG_MAX_UPLOAD_MB', 20)));
         <input class="nx-sr-only" type="file" accept=".pdf,.docx,.pptx,.jpg,.jpeg,.png,.zip" data-rag-input>
     </label>
 
+    <div class="nx-rag__progress" data-rag-progress role="status" aria-live="polite" hidden></div>
+
     <p class="nx-rag__status" data-rag-status role="status" aria-live="polite"></p>
 
     <div class="nx-rag__list" data-rag-list aria-live="polite"></div>

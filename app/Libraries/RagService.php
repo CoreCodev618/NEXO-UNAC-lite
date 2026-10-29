@@ -143,7 +143,7 @@ final class RagService
         $result = $this->runner->run($args, $this->ingestTimeout);
 
         if (! $result['ok']) {
-            throw new RuntimeException($this->failureMessage($result, 'No se pudo indexar el documento.'));
+            throw new RuntimeException($this->failureMessage($result, 'No se pudo leer el archivo.'));
         }
 
         $chunks = 0;
@@ -402,7 +402,7 @@ final class RagService
     private function failureMessage(array $result, string $prefix): string
     {
         if ($result['timed_out']) {
-            return $prefix . ' El proceso tardó demasiado. Revisa Qdrant/Gemini o intenta con un archivo más pequeño.';
+            return $prefix . ' Tardó demasiado: intenta de nuevo o con un archivo más pequeño.';
         }
 
         // El stderr de Python puede traer URLs de Qdrant, rutas locales o errores
@@ -412,7 +412,7 @@ final class RagService
             'stderr' => mb_substr(trim($result['stderr']), -1000),
         ]);
 
-        return $prefix . ' Revisa los logs de writable/logs.';
+        return $prefix . ' Intenta de nuevo en unos segundos.';
     }
 
     private function pageUrl(int $pageId): string

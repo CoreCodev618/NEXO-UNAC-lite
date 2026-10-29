@@ -3,10 +3,17 @@
  * Tutor (vista /tutor). Con $chatPage responde usando ese apunte como contexto.
  *
  * @var array|null $chatPage
+ * @var array|null $chatDoc   ['id', 'title'] del archivo elegido
  */
 $page      = $chatPage ?? null;
+$doc       = $chatDoc ?? null;
 $pageTitle = $page !== null ? ($page['title'] ?: 'Apunte sin título') : null;
-$suggestions = $pageTitle !== null
+$suggestions = $doc !== null
+    ? [
+        ['icon' => 'file-text', 'text' => '¿De qué trata este archivo?'],
+        ['icon' => 'check-square', 'text' => 'Hazme cinco preguntas de este archivo'],
+    ]
+    : ($pageTitle !== null
     ? [
         ['icon' => 'file-text', 'text' => 'Resume este apunte en cinco puntos'],
         ['icon' => 'check-square', 'text' => 'Hazme tres preguntas para repasar'],
@@ -14,13 +21,14 @@ $suggestions = $pageTitle !== null
     : [
         ['icon' => 'file-text', 'text' => 'Hazme un resumen de mi material'],
         ['icon' => 'check-square', 'text' => 'Hazme cinco preguntas de práctica'],
-    ];
+    ]);
 ?>
 <section
     class="nx-chat"
     id="nx-chat"
     aria-labelledby="nx-chat-title"
     data-page-id="<?= $page !== null ? (int) $page['id'] : '' ?>"
+    data-doc-id="<?= $doc !== null ? (int) $doc['id'] : '' ?>"
 >
     <div class="nx-chat__head">
         <span class="nx-chat__head-icon" aria-hidden="true"><?= nexo_icon('sparkles') ?></span>
@@ -58,11 +66,12 @@ $suggestions = $pageTitle !== null
     </div>
 
     <div class="nx-chat__composer">
-        <?php if ($pageTitle !== null): ?>
+        <?php if ($doc !== null || $pageTitle !== null): ?>
             <span class="nx-chat__context">
                 <?= nexo_icon('file-text') ?>
-                <span>Contexto:</span>
-                <strong><?= esc($pageTitle) ?></strong>
+                <span><?= $doc !== null ? 'Archivo:' : 'Apunte:' ?></span>
+                <strong><?= esc($doc['title'] ?? $pageTitle) ?></strong>
+                <a href="<?= base_url('tutor') ?>">Quitar</a>
             </span>
         <?php endif ?>
 

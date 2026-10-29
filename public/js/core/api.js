@@ -119,9 +119,21 @@ export const api = {
       return request(`/documents/${id}`, { method: 'DELETE' });
     },
 
-    upload(formData, onProgress) {
+    ingest(id, signal) {
+      return request(`/documents/${id}/ingest`, { method: 'POST', signal });
+    },
+
+    summary(id) {
+      return request(`/documents/${id}/summary`, { method: 'POST' });
+    },
+
+    upload(formData, onProgress, signal) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        signal?.addEventListener('abort', () => {
+          xhr.abort();
+          reject(new DOMException('Subida cancelada', 'AbortError'));
+        });
         xhr.open('POST', `${API_BASE}/documents`);
         xhr.withCredentials = true;
         xhr.setRequestHeader('Accept', 'application/json');

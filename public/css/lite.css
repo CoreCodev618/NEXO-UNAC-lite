@@ -183,3 +183,90 @@ html {
   width: auto;
   max-width: 260px;
 }
+
+/* Tutor pensando y progreso de subida ------------------------------------- */
+
+.nx-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.nx-thinking__time,
+.nx-rag__elapsed {
+  color: var(--muted-2);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.nx-chat__context a {
+  margin-left: var(--space-1);
+  color: var(--wine);
+}
+
+.nx-rag__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: var(--paper-2);
+}
+
+.nx-rag__progress[hidden] {
+  display: none;
+}
+
+.nx-rag__progress-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-sm);
+}
+
+.nx-rag__progress-main span {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.nx-rag__spinner {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 2px solid var(--rule);
+  border-top-color: var(--wine);
+  border-radius: 50%;
+  animation: nx-spin 0.8s linear infinite;
+}
+
+.nx-rag__spinner--sm {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  vertical-align: -2px;
+}
+
+@keyframes nx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-rag__spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+.nx-rag__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}

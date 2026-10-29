@@ -4,15 +4,29 @@ import { icon } from '../core/icons.js';
 import { toast } from '../core/toast.js';
 
 const ALLOWED = new Set(['pdf', 'docx', 'pptx', 'jpg', 'jpeg', 'png', 'zip']);
+const IMAGES = new Set(['jpg', 'jpeg', 'png']);
 const BADGE = {
   indexed: `<span class="nx-badge nx-badge--success">${icon('check-circle')} Listo</span>`,
   error: `<span class="nx-badge nx-badge--danger">${icon('alert-triangle')} No se pudo leer</span>`,
-  pending: `<span class="nx-badge nx-badge--outline">${icon('clock')} Pendiente</span>`,
+  pending: `<span class="nx-badge nx-badge--outline">${icon('clock')} Sin leer</span>`,
 };
 
 function extension(name = '') {
   const parts = String(name).toLowerCase().split('.');
   return parts.length > 1 ? parts.pop() : '';
+}
+
+function actions(doc) {
+  if (doc.status !== 'indexed') {
+    return `<button class="nx-btn nx-btn--secondary nx-btn--sm" type="button" data-rag-retry="${doc.id}">${icon('refresh')} Leer de nuevo</button>`;
+  }
+
+  const summary = doc.summary_id
+    ? `<a class="nx-btn nx-btn--secondary nx-btn--sm" href="${appUrl(`pages/${doc.summary_id}`)}">${icon('file-text')} Ver resumen</a>`
+    : `<button class="nx-btn nx-btn--secondary nx-btn--sm" type="button" data-rag-summary="${doc.id}">${icon('file-text')} Generar resumen</button>`;
+
+  return `${summary}
+    <a class="nx-btn nx-btn--tutor nx-btn--sm" href="${appUrl(`tutor?doc=${doc.id}`)}">${icon('sparkles')} Preguntar al tutor</a>`;
 }
 
 function renderList(root, documents) {
@@ -28,6 +42,7 @@ function renderList(root, documents) {
             <strong>${escapeHtml(doc.title || 'Archivo')}</strong>
             <span>${escapeHtml(doc.size_label || '')}</span>
             ${doc.status === 'error' && doc.error ? `<p class="nx-rag__item-error">${escapeHtml(doc.error)}</p>` : ''}
+            <div class="nx-rag__actions">${actions(doc)}</div>
           </div>
           <div class="nx-rag__item-side">
             ${BADGE[doc.status] || BADGE.pending}
@@ -53,33 +68,123 @@ function status(root, text, state = '') {
   el.dataset.state = state;
 }
 
+/**
+ * Tarjeta de progreso: qué está haciendo, cuánto lleva y un botón para cancelar.
+ * Devuelve { step(texto), done() }.
+ */
+function progress(root, name, onCancel) {
+  const box = qs('[data-rag-progress]', root);
+  const started = Date.now();
+  box.hidden = false;
+  box.innerHTML = `
+    <span class="nx-rag__spinner" aria-hidden="true"></span>
+    <div class="nx-rag__progress-main">
+      <strong>${escapeHtml(name)}</strong>
+      <span data-rag-step></span>
+    </div>
+    <span class="nx-rag__elapsed" data-rag-elapsed>0 s</span>
+    <button class="nx-btn nx-btn--secondary nx-btn--sm" type="button" data-rag-cancel>Cancelar</button>`;
+
+  qs('[data-rag-cancel]', box).addEventListener('click', onCancel, { once: true });
+  const timer = window.setInterval(() => {
+    qs('[data-rag-elapsed]', box).textContent = `${Math.round((Date.now() - started) / 1000)} s`;
+  }, 1000);
+
+  return {
+    step(text) {
+      qs('[data-rag-step]', box).textContent = text;
+    },
+    done() {
+      window.clearInterval(timer);
+      box.hidden = true;
+      box.innerHTML = '';
+    },
+  };
+}
+
+async function read(docId, name, ext, bar, signal) {
+  bar.step(
+    IMAGES.has(ext)
+      ? 'Leyendo la foto con IA (reconoce el texto)…'
+      : 'Leyendo el archivo y preparándolo para el tutor…',
+  );
+  await api.documents.ingest(docId, signal);
+  toast.success(`«${name}» está listo. Ya puedes generar su resumen o preguntarle al tutor.`, 'Material listo');
+}
+
 async function upload(root, file) {
   if (root.classList.contains('is-uploading')) return;
   const maxMb = Number(root.dataset.ragMaxMb || 20);
+  const ext = extension(file.name);
 
-  if (!ALLOWED.has(extension(file.name))) return status(root, 'Ese formato no se puede leer. Usa PDF, Word, PowerPoint, foto o ZIP.', 'error');
+  if (!ALLOWED.has(ext)) return status(root, 'Ese formato no se puede leer. Usa PDF, Word, PowerPoint, foto o ZIP.', 'error');
   if (file.size > maxMb * 1024 * 1024) return status(root, `El archivo pesa más de ${maxMb} MB.`, 'error');
 
   const form = new FormData();
   form.append('file', file);
 
+  const controller = new AbortController();
+  let docId = null;
   root.classList.add('is-uploading');
-  status(root, `Leyendo «${file.name}» y escribiendo su resumen… puede tardar un poco.`, 'busy');
+  status(root, '');
+
+  const bar = progress(root, file.name, async () => {
+    controller.abort();
+    // El servidor puede seguir leyendo: se borra para que no quede a medias.
+    if (docId) await api.documents.remove(docId).catch(() => {});
+  });
 
   try {
-    const uploaded = await api.documents.upload(form);
-    status(root, '');
-    if (uploaded?.note_id) {
-      // El tutor ya escribió el resumen: se abre para que lo vea.
-      window.location.href = appUrl(`pages/${uploaded.note_id}`);
-      return;
-    }
-    toast.success(`«${file.name}» está listo. Ya puedes preguntarle al tutor.`, 'Material listo');
+    bar.step('Subiendo…');
+    const doc = await api.documents.upload(form, (pct) => bar.step(`Subiendo… ${pct}%`), controller.signal);
+    docId = doc.id;
+    await read(docId, file.name, ext, bar, controller.signal);
   } catch (error) {
-    status(root, error instanceof ApiError ? error.message : 'No se pudo subir el archivo.', 'error');
+    if (error?.name === 'AbortError') {
+      toast.info(`Se canceló la subida de «${file.name}».`, 'Cancelado');
+    } else {
+      status(root, error instanceof ApiError ? error.message : 'No se pudo subir el archivo.', 'error');
+    }
   } finally {
+    bar.done();
     root.classList.remove('is-uploading');
     await refresh(root);
+  }
+}
+
+async function retry(root, button) {
+  if (root.classList.contains('is-uploading')) return;
+  const item = button.closest('.nx-rag__item');
+  const name = qs('strong', item)?.textContent || 'Archivo';
+  const ext = (qs('.nx-rag__filetype', item)?.textContent || '').trim().toLowerCase();
+  const controller = new AbortController();
+
+  root.classList.add('is-uploading');
+  status(root, '');
+  const bar = progress(root, name, () => controller.abort());
+
+  try {
+    await read(button.dataset.ragRetry, name, ext, bar, controller.signal);
+  } catch (error) {
+    if (error?.name !== 'AbortError') status(root, error.message || 'No se pudo leer el archivo.', 'error');
+  } finally {
+    bar.done();
+    root.classList.remove('is-uploading');
+    await refresh(root);
+  }
+}
+
+async function summarize(button) {
+  button.disabled = true;
+  button.innerHTML = `<span class="nx-rag__spinner nx-rag__spinner--sm" aria-hidden="true"></span> El tutor está escribiendo…`;
+
+  try {
+    const note = await api.documents.summary(button.dataset.ragSummary);
+    window.location.href = note?.url || appUrl(`pages/${note?.id}`);
+  } catch (error) {
+    button.disabled = false;
+    button.innerHTML = `${icon('file-text')} Generar resumen`;
+    toast.error(error.message || 'No se pudo generar el resumen.', 'Sin resumen');
   }
 }
 
@@ -110,6 +215,12 @@ export function initRagUpload() {
     });
 
     qs('[data-rag-list]', root).addEventListener('click', async (event) => {
+      const summary = event.target.closest('[data-rag-summary]');
+      if (summary) return summarize(summary);
+
+      const again = event.target.closest('[data-rag-retry]');
+      if (again) return retry(root, again);
+
       const button = event.target.closest('[data-rag-remove]');
       if (!button || !window.confirm(`¿Quitar «${button.dataset.ragName}»? El tutor dejará de usarlo.`)) return;
 
