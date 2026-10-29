@@ -3,27 +3,13 @@
    ========================================================================== */
 
 .nx-chat {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: var(--z-palette);
   display: flex;
-  width: min(var(--chat-w), 100vw);
+  width: min(860px, 100%);
+  height: calc(100dvh - var(--topbar-h));
+  margin: 0 auto;
   flex-direction: column;
-  border-left: 1px solid var(--rule);
+  border-inline: 1px solid var(--rule);
   background: var(--paper);
-  box-shadow: -18px 0 44px oklch(21% 0.022 45 / 0.14);
-  transform: translateX(103%);
-  visibility: hidden;
-  transition:
-    transform var(--dur-slow) var(--ease-out),
-    visibility var(--dur-slow);
-}
-
-.nx-chat.is-open {
-  transform: translateX(0);
-  visibility: visible;
 }
 
 .nx-chat__head {
@@ -478,23 +464,6 @@
   flex: none;
 }
 
-.nx-chat__backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: calc(var(--z-palette) - 1);
-  background: oklch(21% 0.022 45 / 0.36);
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity var(--dur-base) var(--ease-out),
-    visibility var(--dur-base);
-}
-
-.nx-chat__backdrop.is-visible {
-  opacity: 1;
-  visibility: visible;
-}
-
 /* Historial simple -------------------------------------------------------- */
 
 .nx-chat__history {
@@ -547,8 +516,7 @@
 
 @media (max-width: 719px) {
   .nx-chat {
-    width: 100vw;
-    border-left: 0;
+    border-inline: 0;
   }
 
   .nx-chat__head {
@@ -562,10 +530,6 @@
 
   .nx-chat__composer {
     padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
-  }
-
-  .nx-chat__backdrop {
-    display: none;
   }
 }
 

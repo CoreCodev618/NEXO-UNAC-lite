@@ -58,7 +58,6 @@ $pageId   = $isDoc ? (int) $currentPage['id'] : null;
         </main>
     </div>
 
-    <?= $this->include('partials/chat-panel') ?>
     <?= $this->include('partials/toast-region') ?>
 
     <?php if ($isDoc): ?>

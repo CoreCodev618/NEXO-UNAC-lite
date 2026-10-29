@@ -24,10 +24,14 @@ $onHome    = $activeNav === 'dashboard' && empty($currentPage);
     </div>
 
     <div class="nx-sidebar__scroll nx-scroll">
-        <nav class="nx-nav" aria-label="Inicio">
+        <nav class="nx-nav" aria-label="Secciones">
             <a class="nx-nav__item<?= $onHome ? ' is-active' : '' ?>" href="<?= base_url('dashboard') ?>" <?= $onHome ? 'aria-current="page"' : '' ?>>
                 <?= nexo_icon('layout-dashboard') ?>
                 <span>Inicio</span>
+            </a>
+            <a class="nx-nav__item<?= $activeNav === 'tutor' ? ' is-active' : '' ?>" href="<?= base_url('tutor') ?>" <?= $activeNav === 'tutor' ? 'aria-current="page"' : '' ?>>
+                <?= nexo_icon('sparkles') ?>
+                <span>Tutor</span>
             </a>
         </nav>
 

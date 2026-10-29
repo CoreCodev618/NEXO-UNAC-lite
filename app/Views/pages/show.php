@@ -34,7 +34,12 @@ $renderBlockMenu = static function (int|string $id): string {
                 aria-label="Título del apunte"
                 data-page-title-input
             ><?= $pageId > 0 ? esc($page['title']) : '' ?></h1>
-            <p class="nx-doc-head__sub">Escribe aquí. Se guarda solo.</p>
+            <p class="nx-doc-head__sub">
+                <?php if (! empty($page['document_title'])): ?>
+                    <span class="nx-note-tag"><?= nexo_icon('file-text') ?><?= esc($page['document_title']) ?></span>
+                <?php endif ?>
+                Escribe aquí. Se guarda solo.
+            </p>
         </div>
     </header>
 

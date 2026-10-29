@@ -1,5 +1,5 @@
 import { api, ApiError } from '../core/api.js';
-import { escapeHtml, qs } from '../core/dom.js';
+import { appUrl, escapeHtml, qs } from '../core/dom.js';
 import { icon } from '../core/icons.js';
 import { toast } from '../core/toast.js';
 
@@ -64,11 +64,16 @@ async function upload(root, file) {
   form.append('file', file);
 
   root.classList.add('is-uploading');
-  status(root, `Leyendo «${file.name}»… puede tardar un poco.`, 'busy');
+  status(root, `Leyendo «${file.name}» y escribiendo su resumen… puede tardar un poco.`, 'busy');
 
   try {
-    await api.documents.upload(form);
+    const uploaded = await api.documents.upload(form);
     status(root, '');
+    if (uploaded?.note_id) {
+      // El tutor ya escribió el resumen: se abre para que lo vea.
+      window.location.href = appUrl(`pages/${uploaded.note_id}`);
+      return;
+    }
     toast.success(`«${file.name}» está listo. Ya puedes preguntarle al tutor.`, 'Material listo');
   } catch (error) {
     status(root, error instanceof ApiError ? error.message : 'No se pudo subir el archivo.', 'error');

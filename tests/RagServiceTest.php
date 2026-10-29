@@ -40,6 +40,11 @@ final class RagServiceTest extends CIUnitTestCase
         $this->assertStringNotContainsString('--min-score', $rag->retrieve('q', [1 => 'PDF'], null, 0.0)[0]['text']);
     }
 
+    public function testTutorNoteLinesDropBlankLines(): void
+    {
+        $this->assertSame(['Resumen.', '- Costo fijo'], \App\Libraries\TutorNotes::lines("Resumen.\n\n  - Costo fijo  \r\n"));
+    }
+
     public function testRetrieveWithoutDocumentsSkipsQdrant(): void
     {
         $rag = new RagService(new PythonRunner('/nonexistent/python'));

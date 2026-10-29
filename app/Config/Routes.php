@@ -11,9 +11,10 @@ $routes->get('/', 'Home::index');
 // Login y registro (Shield)
 service('auth')->routes($routes);
 
-// App: inicio, apuntes
+// App: inicio, tutor, apuntes
 $routes->group('', ['filter' => 'session'], static function (RouteCollection $routes): void {
     $routes->get('dashboard', 'Web\DashboardController::index');
+    $routes->get('tutor', 'Web\TutorController::index');
     $routes->get('pages/nueva', 'Web\PageController::new');
     $routes->get('pages/(:num)', 'Web\PageController::show/$1');
 });
@@ -26,6 +27,7 @@ $routes->group('api/v1', [
     $routes->post('pages', 'PageController::create');
     $routes->put('pages/(:num)', 'PageController::update/$1');
     $routes->post('chat', 'AIChatController::send');
+    $routes->post('notes', 'NoteController::create');
     $routes->get('documents', 'DocumentController::index');
     $routes->post('documents', 'DocumentController::create');
     $routes->delete('documents/(:num)', 'DocumentController::delete/$1');

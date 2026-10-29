@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Api\V1;
 
 use App\Libraries\RagService;
+use App\Libraries\TutorNotes;
 use CodeIgniter\HTTP\ResponseInterface;
 use Throwable;
 
@@ -216,10 +217,22 @@ final class DocumentController extends BaseApiController
                 'error_message' => null,
             ]);
 
+            // El resumen es un extra: si Groq falla, el archivo igual queda listo.
+            $noteId = null;
+            try {
+                $noteId = (new TutorNotes())->fromDocument((int) $user->id, $docId, $title);
+            } catch (Throwable $error) {
+                log_message('warning', 'No se pudo crear el apunte del documento {id}: {error}', [
+                    'id'    => $docId,
+                    'error' => $error->getMessage(),
+                ]);
+            }
+
             $row = $this->find($docId);
 
             return $this->ok(
-                ($row !== null ? $this->formatDocument($row) : ['id' => $docId]) + ['chunks' => $result['chunks']],
+                ($row !== null ? $this->formatDocument($row) : ['id' => $docId])
+                    + ['chunks' => $result['chunks'], 'note_id' => $noteId],
                 201,
             );
         } catch (Throwable $error) {

@@ -2,6 +2,7 @@ import { initDropdowns } from './core/dropdown.js';
 import { initRagUpload } from './modules/rag-upload.js';
 import { initChat } from './modules/chat.js';
 import { initEditor } from './modules/editor.js';
+import { initNotesFilter } from './modules/notes-filter.js';
 import { initSidebar } from './modules/sidebar.js';
 
 function boot() {
@@ -10,6 +11,7 @@ function boot() {
   initChat();
   initEditor();
   initRagUpload();
+  initNotesFilter();
 }
 
 if (document.readyState === 'loading') {

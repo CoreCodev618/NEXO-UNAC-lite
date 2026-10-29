@@ -1,18 +1,9 @@
 import { api, ApiError } from '../core/api.js';
-import {
-  appUrl,
-  escapeHtml,
-  lockScroll,
-  qs,
-  qsa,
-  trapFocus,
-  unlockScroll,
-} from '../core/dom.js';
+import { appUrl, escapeHtml, qs, qsa } from '../core/dom.js';
 import { icon } from '../core/icons.js';
 import { toast } from '../core/toast.js';
 
 let chat = null;
-let lastFocus = null;
 let sessionId = null;
 let sending = false;
 
@@ -50,6 +41,7 @@ function messageShell(role, html) {
       <div class="nx-msg__meta">
         <span>${user ? 'Tú' : 'Tutor NEXO'} · ahora</span>
         ${!user ? `<button type="button" data-copy-message>Copiar</button>` : ''}
+        ${!user ? `<button type="button" data-save-note hidden>Guardar como apunte</button>` : ''}
       </div>
     </div>
   `;
@@ -154,7 +146,7 @@ async function send(message) {
   const typing = appendTyping();
 
   try {
-    const pageId = Number(document.body.dataset.pageId || 0);
+    const pageId = Number(chat.dataset.pageId || 0);
     const response = await api.chat.send({
       message: text,
       page_id: pageId > 0 ? pageId : null,
@@ -178,6 +170,13 @@ async function send(message) {
 
     const safeReply = escapeHtml(String(reply)).replace(/\r?\n/g, '<br>');
     const element = appendMessage('assistant', safeReply);
+    const sourceList = Array.isArray(response?.sources) ? response.sources : [];
+    const saveButton = qs('[data-save-note]', element);
+    if (saveButton && (sourceList.length > 0 || pageId > 0)) {
+      saveButton.hidden = false;
+      saveButton.dataset.question = text;
+      saveButton.dataset.documentId = String(sourceList[0]?.doc_id || '');
+    }
     if (response?.degraded) {
       const note = document.createElement('div');
       note.className = 'nx-msg__note';
@@ -203,32 +202,6 @@ async function send(message) {
   }
 }
 
-export function openChat() {
-  if (!chat) return;
-  lastFocus = document.activeElement;
-  chat.classList.add('is-open');
-  chat.removeAttribute('inert');
-  chat.setAttribute('aria-hidden', 'false');
-  qs('.nx-chat__backdrop')?.classList.add('is-visible');
-  qsa('[data-chat-toggle]').forEach((button) => button.setAttribute('aria-expanded', 'true'));
-  lockScroll();
-  window.requestAnimationFrame(() => qs('[data-chat-input]', chat)?.focus());
-}
-
-export function closeChat() {
-  if (!chat) return;
-  chat.classList.remove('is-open');
-  chat.setAttribute('aria-hidden', 'true');
-  chat.setAttribute('inert', '');
-  qs('.nx-chat__backdrop')?.classList.remove('is-visible');
-  qsa('[data-chat-toggle]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
-  unlockScroll();
-
-  if (lastFocus instanceof HTMLElement && lastFocus.isConnected) {
-    lastFocus.focus();
-  }
-}
-
 function resetConversation() {
   sessionId = null;
   const messages = qs('[data-chat-messages]', chat);
@@ -244,39 +217,41 @@ function autoGrow(textarea) {
   textarea.style.height = `${Math.min(textarea.scrollHeight, 116)}px`;
 }
 
+async function saveNote(button) {
+  const bubble = button.closest('.nx-msg__main')?.querySelector('.nx-msg__bubble');
+  const text = bubble?.innerText || '';
+  if (!text) return;
+
+  button.disabled = true;
+  try {
+    const note = await api.notes.create({
+      title: (button.dataset.question || 'Apunte del tutor').slice(0, 120),
+      text,
+      document_id: Number(button.dataset.documentId || 0) || null,
+    });
+    button.outerHTML = `<a href="${escapeHtml(note?.url || appUrl(`pages/${note?.id}`))}">Ver apunte</a>`;
+    toast.success('Lo guardé en tus apuntes.', 'Apunte guardado');
+  } catch (error) {
+    button.disabled = false;
+    toast.error(error.message || 'No se pudo guardar el apunte.', 'No se guardó');
+  }
+}
+
 export function initChat() {
   chat = qs('#nx-chat');
-  if (!chat) return;
 
-  qsa('[data-chat-toggle]').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      event.preventDefault();
-      if (chat.classList.contains('is-open')) closeChat();
-      else openChat();
-    });
-  });
-
-  qsa('[data-chat-close]').forEach((button) => button.addEventListener('click', closeChat));
-  qsa('[data-chat-new]').forEach((button) => button.addEventListener('click', resetConversation));
-  qs('.nx-chat__backdrop')?.addEventListener('click', closeChat);
-
+  // Ctrl+/ (⌘/ en Mac) abre el tutor. En teclados latinos «/» es Mayús+7, por eso no se filtra Shift.
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && chat.classList.contains('is-open')) {
-      event.preventDefault();
-      closeChat();
-      return;
-    }
-
-    if (event.key === 'Tab' && chat.classList.contains('is-open')) {
-      trapFocus(chat, event);
-    }
-
-    // Ctrl+/ (⌘/ en Mac). En teclados latinos «/» es Mayús+7, por eso no se filtra Shift.
     if ((event.metaKey || event.ctrlKey) && event.key === '/') {
       event.preventDefault();
-      if (!chat.classList.contains('is-open')) openChat();
+      if (chat) qs('[data-chat-input]', chat)?.focus();
+      else window.location.href = appUrl('tutor');
     }
   });
+
+  if (!chat) return;
+
+  qsa('[data-chat-new]').forEach((button) => button.addEventListener('click', resetConversation));
 
   const form = qs('[data-chat-form]', chat);
   const input = qs('[data-chat-input]', chat);
@@ -301,6 +276,12 @@ export function initChat() {
   });
 
   qs('[data-chat-messages]', chat)?.addEventListener('click', async (event) => {
+    const save = event.target.closest('[data-save-note]');
+    if (save) {
+      saveNote(save);
+      return;
+    }
+
     const copy = event.target.closest('[data-copy-message]');
     if (!copy) return;
     const bubble = copy.closest('.nx-msg__main')?.querySelector('.nx-msg__bubble');

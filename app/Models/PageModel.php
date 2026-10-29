@@ -19,6 +19,7 @@ final class PageModel extends Model
     protected $allowedFields    = [
         'workspace_id',
         'parent_id',
+        'document_id',
         'created_by',
         'title',
         'icon',

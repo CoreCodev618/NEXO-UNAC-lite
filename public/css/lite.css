@@ -142,3 +142,44 @@ html {
 .nx-home .nx-section__title {
   font-size: var(--text-xl);
 }
+
+/* Apuntes del tutor: etiqueta del material y filtro ------------------------- */
+
+.nx-note-tag {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 4px;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-xs);
+  background: var(--paper-2);
+  color: var(--ink-2);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nx-note-tag .nx-icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
+.nx-doc-head__sub .nx-note-tag {
+  margin-right: var(--space-2);
+}
+
+.nx-notes-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.nx-notes-filter select {
+  width: auto;
+  max-width: 260px;
+}

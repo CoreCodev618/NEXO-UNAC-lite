@@ -33,9 +33,11 @@ $page = $currentPage ?? null;
     </div>
 
     <div class="nx-topbar__right">
-        <button class="nx-btn nx-btn--tutor nx-btn--sm" type="button" data-chat-toggle aria-controls="nx-chat" aria-expanded="false" aria-keyshortcuts="Control+/" title="Preguntar al tutor (Ctrl+/)">
-            <?= nexo_icon('sparkles') ?>
-            <span class="nx-topbar__tutor-label">Preguntar al tutor</span>
-        </button>
+        <?php if (($activeNav ?? '') !== 'tutor'): ?>
+            <a class="nx-btn nx-btn--tutor nx-btn--sm" href="<?= base_url('tutor' . (! empty($page['id']) ? '?page=' . (int) $page['id'] : '')) ?>" aria-keyshortcuts="Control+/" title="Preguntar al tutor (Ctrl+/)">
+                <?= nexo_icon('sparkles') ?>
+                <span class="nx-topbar__tutor-label"><?= ! empty($page['id']) ? 'Preguntar sobre este apunte' : 'Preguntar al tutor' ?></span>
+            </a>
+        <?php endif ?>
     </div>
 </header>

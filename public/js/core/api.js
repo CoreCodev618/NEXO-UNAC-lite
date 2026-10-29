@@ -168,4 +168,10 @@ export const api = {
       return request('/chat', { method: 'POST', body: payload, signal });
     },
   },
+
+  notes: {
+    create(payload) {
+      return request('/notes', { method: 'POST', body: payload });
+    },
+  },
 };

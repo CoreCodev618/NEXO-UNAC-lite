@@ -12,7 +12,7 @@ class DashboardController extends BaseWebController
             'pageTitle'   => 'Inicio',
             'topbarTitle' => 'Inicio',
             'activeNav'   => 'dashboard',
-            'recentPages' => $this->repository()->recentPages((int) auth()->id(), 8),
+            'recentPages' => $this->repository()->recentPages((int) auth()->id(), 100),
         ]);
     }
 }

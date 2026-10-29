@@ -142,14 +142,66 @@ final class NexoRepository
             return $block;
         }, $blocks);
 
+        $documentTitle = empty($page['document_id']) ? null : db_connect()->table('documents')
+            ->select('title')->where('id', (int) $page['document_id'])->get()->getRow('title');
+
         return [
-            'id'         => (int) $page['id'],
-            'title'      => (string) $page['title'],
-            'icon'       => (string) ($page['icon'] ?? 'file-text'),
-            'updated_at' => $page['updated_at'],
-            'workspace'  => $workspace,
-            'blocks'     => $blocks,
+            'id'             => (int) $page['id'],
+            'title'          => (string) $page['title'],
+            'icon'           => (string) ($page['icon'] ?? 'file-text'),
+            'updated_at'     => $page['updated_at'],
+            'document_title' => $documentTitle,
+            'workspace'      => $workspace,
+            'blocks'         => $blocks,
         ];
+    }
+
+    /**
+     * Apunte escrito por el tutor: un bloque de texto por línea, en el espacio
+     * personal y etiquetado con el archivo de origen (si lo hay).
+     *
+     * @param list<string> $lines
+     */
+    public function createNote(int $userId, string $title, array $lines, ?int $documentId): int
+    {
+        $workspaceId = (int) $this->ensurePersonalWorkspace($userId)['id'];
+        $pages       = model(PageModel::class);
+        $max         = $pages->selectMax('order_index')->where('workspace_id', $workspaceId)->first();
+
+        $db = db_connect();
+        $db->transStart();
+
+        $pageId = (int) $pages->insert([
+            'workspace_id' => $workspaceId,
+            'document_id'  => $documentId,
+            'created_by'   => $userId,
+            'title'        => mb_substr(trim($title) ?: 'Apunte del tutor', 0, 255),
+            'icon'         => 'sparkles',
+            'order_index'  => (int) ($max['order_index'] ?? 0) + 1,
+        ]);
+
+        $order = 0;
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+
+            model(BlockModel::class)->insert([
+                'page_id'     => $pageId,
+                'type'        => 'parrafo',
+                'content'     => json_encode(['text' => mb_substr($line, 0, 4000)], JSON_UNESCAPED_UNICODE),
+                'order_index' => $order++,
+            ]);
+        }
+
+        $db->transComplete();
+
+        if (! $db->transStatus()) {
+            throw new \RuntimeException('No se pudo guardar el apunte.');
+        }
+
+        return $pageId;
     }
 
     public function newPage(int $workspaceId, int $userId): array
@@ -174,8 +226,9 @@ final class NexoRepository
     {
         $limit = max(1, min(100, $limit));
 
-        $sql = 'SELECT p.id, p.title, p.icon, p.updated_at
+        $sql = 'SELECT p.id, p.title, p.icon, p.updated_at, p.document_id, d.title AS document_title
                 FROM pages p
+                LEFT JOIN documents d ON d.id = p.document_id
                 INNER JOIN workspaces w ON w.id = p.workspace_id
                 INNER JOIN workspace_members wm ON wm.workspace_id = p.workspace_id
                 WHERE wm.user_id = ?
@@ -185,7 +238,8 @@ final class NexoRepository
                 LIMIT ' . $limit;
 
         return array_map(static function (array $page): array {
-            $page['id'] = (int) $page['id'];
+            $page['id']          = (int) $page['id'];
+            $page['document_id'] = $page['document_id'] !== null ? (int) $page['document_id'] : null;
 
             return $page;
         }, db_connect()->query($sql, [$userId])->getResultArray());

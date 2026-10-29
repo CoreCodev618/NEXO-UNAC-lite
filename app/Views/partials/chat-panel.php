@@ -1,10 +1,10 @@
 <?php
 /**
- * Panel del tutor.
+ * Tutor (vista /tutor). Con $chatPage responde usando ese apunte como contexto.
  *
- * @var array|null $currentPage
+ * @var array|null $chatPage
  */
-$page      = $currentPage ?? null;
+$page      = $chatPage ?? null;
 $pageTitle = $page !== null ? ($page['title'] ?: 'Apunte sin título') : null;
 $suggestions = $pageTitle !== null
     ? [
@@ -16,14 +16,11 @@ $suggestions = $pageTitle !== null
         ['icon' => 'check-square', 'text' => 'Hazme cinco preguntas de práctica'],
     ];
 ?>
-<div class="nx-chat__backdrop" data-chat-backdrop></div>
-
-<aside
+<section
     class="nx-chat"
     id="nx-chat"
     aria-labelledby="nx-chat-title"
-    aria-hidden="true"
-    inert
+    data-page-id="<?= $page !== null ? (int) $page['id'] : '' ?>"
 >
     <div class="nx-chat__head">
         <span class="nx-chat__head-icon" aria-hidden="true"><?= nexo_icon('sparkles') ?></span>
@@ -38,9 +35,6 @@ $suggestions = $pageTitle !== null
             <button class="nx-icon-btn" type="button" data-chat-new aria-label="Nueva conversación" data-tip="Nueva conversación">
                 <?= nexo_icon('refresh') ?>
             </button>
-            <button class="nx-icon-btn" type="button" data-chat-close aria-label="Cerrar tutor" data-tip="Cerrar">
-                <?= nexo_icon('x') ?>
-            </button>
         </span>
     </div>
 
@@ -48,7 +42,7 @@ $suggestions = $pageTitle !== null
         <div class="nx-chat__intro" data-chat-intro>
             <?= nexo_illustration('spark', 'nx-chat__intro-art') ?>
             <h2 class="nx-chat__intro-title">¿Qué quieres repasar?</h2>
-            <p class="nx-chat__intro-text">Pregunta lo que quieras. Te respondo con tus apuntes y tu material, y te digo de dónde sale.</p>
+            <p class="nx-chat__intro-text">Pregunta lo que quieras. Te respondo con tu material y te digo de dónde sale. Cada respuesta la puedes guardar como apunte.</p>
 
             <div class="nx-chat__suggestions">
                 <?php foreach ($suggestions as $suggestion): ?>
@@ -88,4 +82,4 @@ $suggestions = $pageTitle !== null
         </form>
 
     </div>
-</aside>
+</section>
