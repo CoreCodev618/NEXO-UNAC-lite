@@ -29,3 +29,4 @@ qdrant_storage/
 .phpunit.result.cache
 .phpunit.cache/
 ca.pem
+.env.aiven
