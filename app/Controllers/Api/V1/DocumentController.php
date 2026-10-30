@@ -227,6 +227,15 @@ final class DocumentController extends BaseApiController
         $docId = (int) $row['id'];
         $db    = \Config\Database::connect();
 
+        // ponytail: el disco de Render free se borra en cada deploy/reinicio; un archivo
+        // sin leer se pierde. Storage externo (R2/S3) si hace falta reintentar siempre.
+        if (! is_file(ROOTPATH . ltrim((string) $row['file_path'], '/'))) {
+            $message = 'El archivo ya no está en el servidor (se reinició). Quítalo y súbelo de nuevo.';
+            $db->table('documents')->where('id', $docId)->update(['error_message' => $message]);
+
+            return $this->error($message, 410, ['document' => $this->formatDocument($this->find($docId) ?? $row)]);
+        }
+
         // El ingest tarda: soltar el lock de la sesión para no bloquear el resto
         // de la app. Si cancelan, la UI borra el documento (delete()).
         session_write_close();
